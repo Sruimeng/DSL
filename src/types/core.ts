@@ -35,6 +35,8 @@ export interface MaterialRef {
 }
 
 export interface MaterialInline {
+  id?: string;
+  name?: string;
   type?: MaterialType;
   color?: string;
   metalness?: number;
@@ -107,7 +109,8 @@ export interface SceneObject {
 // 环境设置
 export interface Background {
   type: 'color' | 'texture' | 'hdri';
-  value: string;
+  value?: string;
+  color?: string;
 }
 
 export interface Fog {
@@ -151,13 +154,19 @@ export interface WorkspaceData {
 export interface TripoScene {
   id: string;
   name: string;
-  version: '2.1';
+  version?: '2.1';
   objects: SceneObject[];
   materials: Material[];
   lights: Light[];
   camera: Camera;
   environment: Environment;
   workspace?: WorkspaceData;
+  selection: string[];
+  metadata: {
+    created: number;
+    modified: number;
+    version: string;
+  };
 }
 
 // 操作类型
@@ -170,6 +179,33 @@ export interface Operation {
   changes?: Partial<SceneObject>;
   operations?: Operation[];
 }
+
+// Action类型 - DSL引擎的状态变更操作
+export type TripoAction =
+  // 对象操作
+  | { type: 'ADD_OBJECT'; payload: Partial<SceneObject> }
+  | { type: 'UPDATE_OBJECT'; payload: { id: string; changes: Partial<SceneObject> } }
+  | { type: 'REMOVE_OBJECT'; payload: { id: string } }
+  | { type: 'DUPLICATE_OBJECT'; payload: { id: string } }
+
+  // 材质操作
+  | { type: 'ADD_MATERIAL'; payload: Partial<MaterialInline> }
+  | { type: 'UPDATE_MATERIAL'; payload: { id: string; changes: Partial<MaterialInline> } }
+  | { type: 'APPLY_MATERIAL'; payload: { objectIds: string[]; materialId: string } }
+
+  // 选择操作
+  | { type: 'SELECT'; payload: { ids: string[]; mode: 'set' | 'add' | 'toggle' } }
+  | { type: 'CLEAR_SELECTION' }
+
+  // 环境操作
+  | { type: 'UPDATE_CAMERA'; payload: Partial<Camera> }
+  | { type: 'ADD_LIGHT'; payload: Partial<Light> }
+  | { type: 'UPDATE_LIGHT'; payload: { id: string; changes: Partial<Light> } }
+  | { type: 'REMOVE_LIGHT'; payload: { id: string } }
+
+  // 场景操作
+  | { type: 'RESET_SCENE' }
+  | { type: 'LOAD_SCENE'; payload: TripoScene };
 
 // Hook返回类型
 export interface TripoSceneAPI {

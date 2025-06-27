@@ -1,12 +1,19 @@
 // ThreeJS渲染器 - 监听DSL状态变化并自动同步到ThreeJS场景
 import * as THREE from 'three';
-import type { TripoEngine } from './core';
-import { type Camera, type Light, type Material, type SceneObject, type TripoScene } from './core';
+import {
+  type Camera,
+  type Light,
+  type Material,
+  type MaterialInline,
+  type SceneObject,
+  type TripoScene,
+} from '../types';
+import type { TripoEngine } from './engine';
 
 export class TripoRenderer {
-  private scene: THREE.Scene;
-  private camera: THREE.Camera;
-  private renderer: THREE.WebGLRenderer;
+  private scene!: THREE.Scene;
+  private camera!: THREE.Camera;
+  private renderer!: THREE.WebGLRenderer;
   private engine: TripoEngine;
 
   // 对象映射表 - DSL对象ID到ThreeJS对象
@@ -40,7 +47,7 @@ export class TripoRenderer {
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    this.renderer.outputEncoding = THREE.sRGBEncoding;
+    this.renderer.outputColorSpace = THREE.SRGBColorSpace;
     this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1;
 
@@ -51,7 +58,7 @@ export class TripoRenderer {
 
   private setupSceneSync() {
     // 监听DSL状态变化
-    this.engine.subscribe((dslScene) => {
+    this.engine.subscribe((dslScene: TripoScene) => {
       this.syncScene(dslScene);
     });
 
@@ -68,18 +75,18 @@ export class TripoRenderer {
     this.syncObjects(dslScene.objects);
 
     // 同步光源
-    this.syncLights(dslScene.environment.lights);
+    this.syncLights(dslScene.lights);
 
     // 同步相机
-    this.syncCamera(dslScene.environment.camera);
+    this.syncCamera(dslScene.camera);
 
     // 同步环境
     this.syncEnvironment(dslScene.environment);
   }
 
   // 同步材质
-  private syncMaterials(materials: Record<string, Material>) {
-    const currentIds = new Set(Object.keys(materials));
+  private syncMaterials(materials: Material[]) {
+    const currentIds = new Set(materials.map((mat) => (mat as any).id).filter(Boolean));
     const existingIds = new Set(this.materialMap.keys());
 
     // 删除不存在的材质
@@ -94,23 +101,26 @@ export class TripoRenderer {
     });
 
     // 添加或更新材质
-    Object.values(materials).forEach((dslMaterial) => {
-      let threeMaterial = this.materialMap.get(dslMaterial.id);
+    materials.forEach((dslMaterial) => {
+      const matId = (dslMaterial as any).id;
+      if (!matId) return;
+
+      let threeMaterial = this.materialMap.get(matId);
 
       if (!threeMaterial) {
         // 创建新材质
-        threeMaterial = this.createThreeMaterial(dslMaterial);
-        this.materialMap.set(dslMaterial.id, threeMaterial);
+        threeMaterial = this.createThreeMaterial(dslMaterial as MaterialInline);
+        this.materialMap.set(matId, threeMaterial);
       } else {
         // 更新现有材质
-        this.updateThreeMaterial(threeMaterial, dslMaterial);
+        this.updateThreeMaterial(threeMaterial, dslMaterial as MaterialInline);
       }
     });
   }
 
   // 同步对象
-  private syncObjects(objects: Record<string, SceneObject>) {
-    const currentIds = new Set(Object.keys(objects));
+  private syncObjects(objects: SceneObject[]) {
+    const currentIds = new Set(objects.map((obj) => obj.id));
     const existingIds = new Set(this.objectMap.keys());
 
     // 删除不存在的对象
@@ -126,15 +136,15 @@ export class TripoRenderer {
     });
 
     // 添加或更新对象
-    Object.values(objects).forEach((dslObject) => {
-      let threeObject = this.objectMap.get(dslObject.id);
+    objects.forEach((dslObject) => {
+      const threeObject = this.objectMap.get(dslObject.id);
 
       if (!threeObject) {
         // 创建新对象
-        threeObject = this.createThreeObject(dslObject);
-        if (threeObject) {
-          this.scene.add(threeObject);
-          this.objectMap.set(dslObject.id, threeObject);
+        const newObject = this.createThreeObject(dslObject);
+        if (newObject) {
+          this.scene.add(newObject);
+          this.objectMap.set(dslObject.id, newObject);
         }
       } else {
         // 更新现有对象
@@ -144,8 +154,8 @@ export class TripoRenderer {
   }
 
   // 同步光源
-  private syncLights(lights: Record<string, Light>) {
-    const currentIds = new Set(Object.keys(lights));
+  private syncLights(lights: Light[]) {
+    const currentIds = new Set(lights.map((light) => light.id));
     const existingIds = new Set(this.lightMap.keys());
 
     // 删除不存在的光源
@@ -160,15 +170,15 @@ export class TripoRenderer {
     });
 
     // 添加或更新光源
-    Object.values(lights).forEach((dslLight) => {
-      let threeLight = this.lightMap.get(dslLight.id);
+    lights.forEach((dslLight) => {
+      const threeLight = this.lightMap.get(dslLight.id);
 
       if (!threeLight) {
         // 创建新光源
-        threeLight = this.createThreeLight(dslLight);
-        if (threeLight) {
-          this.scene.add(threeLight);
-          this.lightMap.set(dslLight.id, threeLight);
+        const newLight = this.createThreeLight(dslLight);
+        if (newLight) {
+          this.scene.add(newLight);
+          this.lightMap.set(dslLight.id, newLight);
         }
       } else {
         // 更新现有光源
@@ -178,33 +188,33 @@ export class TripoRenderer {
   }
 
   // 创建ThreeJS材质
-  private createThreeMaterial(dslMaterial: Material): THREE.Material {
+  private createThreeMaterial(dslMaterial: MaterialInline): THREE.Material {
     let material: THREE.Material;
 
     switch (dslMaterial.type) {
       case 'wireframe':
         material = new THREE.MeshBasicMaterial({
-          color: dslMaterial.color,
+          color: dslMaterial.color || '#ffffff',
           wireframe: true,
-          transparent: dslMaterial.opacity < 1,
-          opacity: dslMaterial.opacity,
+          transparent: (dslMaterial.opacity || 1) < 1,
+          opacity: dslMaterial.opacity || 1,
         });
         break;
       case 'basic':
         material = new THREE.MeshBasicMaterial({
-          color: dslMaterial.color,
-          transparent: dslMaterial.opacity < 1,
-          opacity: dslMaterial.opacity,
+          color: dslMaterial.color || '#ffffff',
+          transparent: (dslMaterial.opacity || 1) < 1,
+          opacity: dslMaterial.opacity || 1,
         });
         break;
       case 'standard':
       default:
         material = new THREE.MeshStandardMaterial({
-          color: dslMaterial.color,
-          metalness: dslMaterial.metalness,
-          roughness: dslMaterial.roughness,
-          transparent: dslMaterial.opacity < 1,
-          opacity: dslMaterial.opacity,
+          color: dslMaterial.color || '#ffffff',
+          metalness: dslMaterial.metalness || 0,
+          roughness: dslMaterial.roughness || 0.5,
+          transparent: (dslMaterial.opacity || 1) < 1,
+          opacity: dslMaterial.opacity || 1,
         });
         break;
     }
@@ -213,30 +223,30 @@ export class TripoRenderer {
   }
 
   // 更新ThreeJS材质
-  private updateThreeMaterial(threeMaterial: THREE.Material, dslMaterial: Material) {
+  private updateThreeMaterial(threeMaterial: THREE.Material, dslMaterial: MaterialInline) {
     if (threeMaterial instanceof THREE.MeshStandardMaterial) {
-      threeMaterial.color.set(dslMaterial.color);
-      threeMaterial.metalness = dslMaterial.metalness;
-      threeMaterial.roughness = dslMaterial.roughness;
-      threeMaterial.opacity = dslMaterial.opacity;
-      threeMaterial.transparent = dslMaterial.opacity < 1;
+      threeMaterial.color.set(dslMaterial.color || '#ffffff');
+      threeMaterial.metalness = dslMaterial.metalness || 0;
+      threeMaterial.roughness = dslMaterial.roughness || 0.5;
+      threeMaterial.opacity = dslMaterial.opacity || 1;
+      threeMaterial.transparent = (dslMaterial.opacity || 1) < 1;
     } else if (threeMaterial instanceof THREE.MeshBasicMaterial) {
-      threeMaterial.color.set(dslMaterial.color);
-      threeMaterial.opacity = dslMaterial.opacity;
-      threeMaterial.transparent = dslMaterial.opacity < 1;
+      threeMaterial.color.set(dslMaterial.color || '#ffffff');
+      threeMaterial.opacity = dslMaterial.opacity || 1;
+      threeMaterial.transparent = (dslMaterial.opacity || 1) < 1;
     }
 
     threeMaterial.needsUpdate = true;
   }
 
   // 创建ThreeJS对象
-  private createThreeObject(dslObject: SceneObject): THREE.Object3D | null {
+  private createThreeObject(dslObject: SceneObject): THREE.Object3D | undefined {
     let object: THREE.Object3D;
 
     switch (dslObject.type) {
       case 'mesh': {
         const geometry = this.createGeometry(dslObject.geometry);
-        const material = this.getMaterial(dslObject.materialId) || new THREE.MeshStandardMaterial();
+        const material = this.getMaterial(dslObject.material) || new THREE.MeshStandardMaterial();
         object = new THREE.Mesh(geometry, material);
         break;
       }
@@ -261,19 +271,37 @@ export class TripoRenderer {
   private updateThreeObject(threeObject: THREE.Object3D, dslObject: SceneObject) {
     // 更新变换
     const { position, rotation, scale } = dslObject.transform;
-    threeObject.position.set(...position);
-    threeObject.rotation.set(...rotation);
-    threeObject.scale.set(...scale);
+    if (position) {
+      if (Array.isArray(position)) {
+        threeObject.position.set(position[0] || 0, position[1] || 0, position[2] || 0);
+      } else {
+        threeObject.position.copy(position);
+      }
+    }
+    if (rotation) {
+      if (Array.isArray(rotation)) {
+        threeObject.rotation.set(rotation[0] || 0, rotation[1] || 0, rotation[2] || 0);
+      } else {
+        threeObject.rotation.setFromVector3(rotation);
+      }
+    }
+    if (scale) {
+      if (Array.isArray(scale)) {
+        threeObject.scale.set(scale[0] || 1, scale[1] || 1, scale[2] || 1);
+      } else {
+        threeObject.scale.copy(scale);
+      }
+    }
 
     // 更新属性
-    threeObject.visible = dslObject.visible;
-    threeObject.castShadow = dslObject.castShadow;
-    threeObject.receiveShadow = dslObject.receiveShadow;
+    threeObject.visible = dslObject.visible ?? true;
+    threeObject.castShadow = dslObject.castShadow ?? false;
+    threeObject.receiveShadow = dslObject.receiveShadow ?? false;
     threeObject.name = dslObject.name;
 
     // 更新材质
-    if (threeObject instanceof THREE.Mesh && dslObject.materialId) {
-      const material = this.getMaterial(dslObject.materialId);
+    if (threeObject instanceof THREE.Mesh && dslObject.material) {
+      const material = this.getMaterial(dslObject.material);
       if (material) {
         threeObject.material = material;
       }
@@ -284,40 +312,48 @@ export class TripoRenderer {
   private createGeometry(geomDef?: SceneObject['geometry']): THREE.BufferGeometry {
     if (!geomDef) return new THREE.BoxGeometry(1, 1, 1);
 
-    switch (geomDef.type) {
+    // 处理几何体引用
+    if ('id' in geomDef) {
+      // 这里应该从某个几何体库中获取，暂时返回默认
+      return new THREE.BoxGeometry(1, 1, 1);
+    }
+
+    // 处理内联几何体定义
+    const geom = geomDef as any;
+    switch (geom.type) {
       case 'box':
         return new THREE.BoxGeometry(
-          geomDef.params.width || 1,
-          geomDef.params.height || 1,
-          geomDef.params.depth || 1,
-          geomDef.params.widthSegments || 1,
-          geomDef.params.heightSegments || 1,
-          geomDef.params.depthSegments || 1,
+          geom.size?.[0] || 1,
+          geom.size?.[1] || 1,
+          geom.size?.[2] || 1,
+          geom.segments?.[0] || 1,
+          geom.segments?.[1] || 1,
+          1,
         );
       case 'sphere':
         return new THREE.SphereGeometry(
-          geomDef.params.radius || 1,
-          geomDef.params.widthSegments || 16,
-          geomDef.params.heightSegments || 12,
-          geomDef.params.phiStart || 0,
-          geomDef.params.phiLength || Math.PI * 2,
-          geomDef.params.thetaStart || 0,
-          geomDef.params.thetaLength || Math.PI,
+          geom.radius || 1,
+          geom.radialSegments || 16,
+          geom.heightSegments || 12,
+          0,
+          Math.PI * 2,
+          0,
+          Math.PI,
         );
       case 'plane':
         return new THREE.PlaneGeometry(
-          geomDef.params.width || 1,
-          geomDef.params.height || 1,
-          geomDef.params.widthSegments || 1,
-          geomDef.params.heightSegments || 1,
+          geom.size?.[0] || 1,
+          geom.size?.[1] || 1,
+          geom.segments?.[0] || 1,
+          geom.segments?.[1] || 1,
         );
       case 'cylinder':
         return new THREE.CylinderGeometry(
-          geomDef.params.radiusTop || 1,
-          geomDef.params.radiusBottom || 1,
-          geomDef.params.height || 1,
-          geomDef.params.radialSegments || 8,
-          geomDef.params.heightSegments || 1,
+          geom.radius || 1,
+          geom.radius || 1,
+          geom.height || 1,
+          geom.radialSegments || 8,
+          geom.heightSegments || 1,
         );
       default:
         return new THREE.BoxGeometry(1, 1, 1);
@@ -325,66 +361,109 @@ export class TripoRenderer {
   }
 
   // 创建光源
-  private createThreeLight(dslLight: Light): THREE.Light | null {
+  private createThreeLight(dslLight: Light): THREE.Light | undefined {
     let light: THREE.Light;
 
     switch (dslLight.type) {
       case 'ambient':
-        light = new THREE.AmbientLight(dslLight.color, dslLight.intensity);
+        light = new THREE.AmbientLight(dslLight.color || '#ffffff', dslLight.intensity || 1);
         break;
       case 'directional': {
-        light = new THREE.DirectionalLight(dslLight.color, dslLight.intensity);
+        light = new THREE.DirectionalLight(dslLight.color || '#ffffff', dslLight.intensity || 1);
         if (dslLight.position) {
-          light.position.set(...dslLight.position);
+          if (Array.isArray(dslLight.position)) {
+            light.position.set(
+              dslLight.position[0] || 0,
+              dslLight.position[1] || 0,
+              dslLight.position[2] || 0,
+            );
+          } else {
+            light.position.copy(dslLight.position);
+          }
         }
         if (dslLight.target) {
-          light.lookAt(...dslLight.target);
+          if (Array.isArray(dslLight.target)) {
+            light.lookAt(dslLight.target[0] || 0, dslLight.target[1] || 0, dslLight.target[2] || 0);
+          } else {
+            light.lookAt(dslLight.target);
+          }
         }
         // 启用阴影
         light.castShadow = true;
-        light.shadow.mapSize.width = 2048;
-        light.shadow.mapSize.height = 2048;
+        if (light.shadow) {
+          light.shadow.mapSize.width = 2048;
+          light.shadow.mapSize.height = 2048;
+        }
         break;
       }
       case 'point': {
-        light = new THREE.PointLight(dslLight.color, dslLight.intensity);
+        const pointLight = new THREE.PointLight(
+          dslLight.color || '#ffffff',
+          dslLight.intensity || 1,
+        );
         if (dslLight.position) {
-          light.position.set(...dslLight.position);
+          if (Array.isArray(dslLight.position)) {
+            pointLight.position.set(
+              dslLight.position[0] || 0,
+              dslLight.position[1] || 0,
+              dslLight.position[2] || 0,
+            );
+          } else {
+            pointLight.position.copy(dslLight.position);
+          }
         }
-        if (dslLight.distance) {
-          light.distance = dslLight.distance;
+        if (dslLight.distance !== undefined) {
+          pointLight.distance = dslLight.distance;
         }
-        if (dslLight.decay) {
-          light.decay = dslLight.decay;
+        if (dslLight.decay !== undefined) {
+          pointLight.decay = dslLight.decay;
         }
-        light.castShadow = true;
+        pointLight.castShadow = true;
+        light = pointLight;
         break;
       }
       case 'spot': {
-        light = new THREE.SpotLight(dslLight.color, dslLight.intensity);
+        const spotLight = new THREE.SpotLight(dslLight.color || '#ffffff', dslLight.intensity || 1);
         if (dslLight.position) {
-          light.position.set(...dslLight.position);
+          if (Array.isArray(dslLight.position)) {
+            spotLight.position.set(
+              dslLight.position[0] || 0,
+              dslLight.position[1] || 0,
+              dslLight.position[2] || 0,
+            );
+          } else {
+            spotLight.position.copy(dslLight.position);
+          }
         }
         if (dslLight.target) {
-          light.lookAt(...dslLight.target);
+          if (Array.isArray(dslLight.target)) {
+            spotLight.lookAt(
+              dslLight.target[0] || 0,
+              dslLight.target[1] || 0,
+              dslLight.target[2] || 0,
+            );
+          } else {
+            spotLight.lookAt(dslLight.target);
+          }
         }
-        if (dslLight.distance) {
-          light.distance = dslLight.distance;
+        if (dslLight.distance !== undefined) {
+          spotLight.distance = dslLight.distance;
         }
-        if (dslLight.angle) {
-          light.angle = dslLight.angle;
+        if (dslLight.angle !== undefined) {
+          spotLight.angle = dslLight.angle;
         }
-        if (dslLight.penumbra) {
-          light.penumbra = dslLight.penumbra;
+        if (dslLight.penumbra !== undefined) {
+          spotLight.penumbra = dslLight.penumbra;
         }
-        if (dslLight.decay) {
-          light.decay = dslLight.decay;
+        if (dslLight.decay !== undefined) {
+          spotLight.decay = dslLight.decay;
         }
-        light.castShadow = true;
+        spotLight.castShadow = true;
+        light = spotLight;
         break;
       }
       default:
-        return null;
+        return undefined;
     }
 
     return light;
@@ -392,15 +471,31 @@ export class TripoRenderer {
 
   // 更新光源
   private updateThreeLight(threeLight: THREE.Light, dslLight: Light) {
-    threeLight.color.set(dslLight.color);
-    threeLight.intensity = dslLight.intensity;
+    threeLight.color.set(dslLight.color || '#ffffff');
+    threeLight.intensity = dslLight.intensity || 1;
 
     if (dslLight.position && 'position' in threeLight) {
-      threeLight.position.set(...dslLight.position);
+      if (Array.isArray(dslLight.position)) {
+        threeLight.position.set(
+          dslLight.position[0] || 0,
+          dslLight.position[1] || 0,
+          dslLight.position[2] || 0,
+        );
+      } else {
+        threeLight.position.copy(dslLight.position);
+      }
     }
 
     if (dslLight.target && 'lookAt' in threeLight) {
-      (threeLight as any).lookAt(...dslLight.target);
+      if (Array.isArray(dslLight.target)) {
+        (threeLight as any).lookAt(
+          dslLight.target[0] || 0,
+          dslLight.target[1] || 0,
+          dslLight.target[2] || 0,
+        );
+      } else {
+        (threeLight as any).lookAt(dslLight.target);
+      }
     }
 
     // 更新特定光源属性
@@ -442,22 +537,50 @@ export class TripoRenderer {
       this.camera.far = dslCamera.far || 1000;
     }
 
-    this.camera.position.set(...dslCamera.position);
-    this.camera.lookAt(...dslCamera.target);
-    this.camera.updateProjectionMatrix();
+    if (Array.isArray(dslCamera.position)) {
+      this.camera.position.set(
+        dslCamera.position[0] || 0,
+        dslCamera.position[1] || 0,
+        dslCamera.position[2] || 0,
+      );
+    } else {
+      this.camera.position.copy(dslCamera.position);
+    }
+
+    if (Array.isArray(dslCamera.target)) {
+      this.camera.lookAt(
+        dslCamera.target[0] || 0,
+        dslCamera.target[1] || 0,
+        dslCamera.target[2] || 0,
+      );
+    } else {
+      this.camera.lookAt(dslCamera.target);
+    }
+
+    if ('updateProjectionMatrix' in this.camera) {
+      (this.camera as any).updateProjectionMatrix();
+    }
   }
 
   // 同步环境
   private syncEnvironment(environment: TripoScene['environment']) {
-    if (environment.background) {
-      this.scene.background = new THREE.Color(environment.background);
+    if (environment?.background?.color) {
+      this.scene.background = new THREE.Color(environment.background.color);
     }
   }
 
   // 获取材质
-  private getMaterial(materialId?: string): THREE.Material | null {
-    if (!materialId) return null;
-    return this.materialMap.get(materialId) || null;
+  private getMaterial(material?: Material): THREE.Material | null {
+    if (!material) return null;
+
+    if ('id' in material) {
+      const id = material.id;
+      if (!id) return null;
+      return this.materialMap.get(id) || null;
+    }
+
+    // 为内联材质创建临时材质
+    return this.createThreeMaterial(material as MaterialInline);
   }
 
   // 开始渲染循环

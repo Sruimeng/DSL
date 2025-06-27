@@ -115,6 +115,12 @@ const createDefaultScene = (): TripoScene => ({
       mapSize: 1024,
     },
   },
+  selection: [],
+  metadata: {
+    created: 0,
+    modified: 0,
+    version: '',
+  },
 });
 
 // 默认材质预设
