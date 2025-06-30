@@ -398,12 +398,18 @@ function addPointLightOperation(): void {
 // 切换背景
 function changeBackgroundOperation(): void {
   backgroundIndex = (backgroundIndex + 1) % backgrounds.length;
+  const newColor = backgrounds[backgroundIndex];
 
-  // 通过渲染器直接设置背景色
+  // 通过引擎的dispatch系统更新背景，这样可以被undo/redo追踪
+  engine.updateEnvironment({
+    background: { type: 'color', color: newColor },
+  });
+
+  // 同时更新Three.js场景的背景色（用于渲染）
   const threeScene = renderer.getThreeScene();
-  threeScene.background = new Color(backgrounds[backgroundIndex]);
+  threeScene.background = new Color(newColor);
 
-  log(`🎨 背景色切换为: ${backgrounds[backgroundIndex]}`);
+  log(`🎨 背景色切换为: ${newColor}`);
 }
 
 // ========== 场景管理方法 ==========

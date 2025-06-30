@@ -5,6 +5,7 @@ import {
   ActionTypes,
   type DSLAction,
   type DSLScene,
+  type Environment,
   type Light,
   type Material,
   type MaterialInline,
@@ -124,7 +125,8 @@ export class DSLEngine {
   private reduce(scene: DSLScene, action: DSLAction): DSLScene {
     switch (action.type) {
       case 'ADD_OBJECT': {
-        const objectId = generateUUID();
+        // 优先使用payload中的ID，如果没有则生成新的
+        const objectId = action.payload.id || generateUUID();
         const object: SceneObject = {
           ...action.payload,
           id: objectId,
@@ -272,7 +274,8 @@ export class DSLEngine {
       }
 
       case 'ADD_MATERIAL': {
-        const materialId = generateUUID();
+        // 优先使用payload中的ID，如果没有则生成新的
+        const materialId = action.payload.id || generateUUID();
         const material: MaterialInline = {
           id: materialId,
           name: action.payload.name || `Material_${materialId}`,
@@ -371,8 +374,17 @@ export class DSLEngine {
         };
       }
 
+      case 'UPDATE_ENVIRONMENT': {
+        return {
+          ...scene,
+          environment: { ...scene.environment, ...action.payload },
+          metadata: { ...scene.metadata, modified: Date.now() },
+        };
+      }
+
       case 'ADD_LIGHT': {
-        const lightId = generateUUID();
+        // 优先使用payload中的ID，如果没有则生成新的
+        const lightId = action.payload.id || generateUUID();
         const light: Light = {
           id: lightId,
           name: action.payload.name || `Light_${lightId}`,
@@ -511,6 +523,10 @@ export class DSLEngine {
 
   applyMaterial(objectIds: string[], materialId: string): void {
     this.dispatch({ type: ActionTypes.APPLY_MATERIAL, payload: { objectIds, materialId } });
+  }
+
+  updateEnvironment(changes: Partial<Environment>): void {
+    this.dispatch({ type: ActionTypes.UPDATE_ENVIRONMENT, payload: changes });
   }
 
   // 查询方法

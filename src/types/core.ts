@@ -230,6 +230,10 @@ export enum ActionTypes {
    */
   UPDATE_CAMERA = 'UPDATE_CAMERA',
   /**
+   * 更新环境 - 修改背景、雾等环境设置
+   */
+  UPDATE_ENVIRONMENT = 'UPDATE_ENVIRONMENT',
+  /**
    * 添加光源 - 创建新的光源对象
    */
   ADD_LIGHT = 'ADD_LIGHT',
@@ -274,6 +278,7 @@ export type DSLAction =
 
   // 环境操作
   | { type: ActionTypes.UPDATE_CAMERA; payload: Partial<Camera> }
+  | { type: ActionTypes.UPDATE_ENVIRONMENT; payload: Partial<Environment> }
   | { type: ActionTypes.ADD_LIGHT; payload: Partial<Light> }
   | { type: ActionTypes.UPDATE_LIGHT; payload: { id: string; changes: Partial<Light> } }
   | { type: ActionTypes.REMOVE_LIGHT; payload: { id: string } }
