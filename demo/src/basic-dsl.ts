@@ -4,7 +4,7 @@
 import { Color, Vector3 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { DSLEngine, DSLRenderer, type DSLAction, type DSLScene } from '../../src/index.js';
-import { animate, log, setupResize, updateStats, updateUndoRedoButtons } from './utils.js';
+import { animate, log, setupResize, updateStats, updateUndoRedoButtons } from './utils.ts';
 
 // 全局变量
 let engine: DSLEngine;
@@ -28,73 +28,7 @@ const backgrounds = [
   '#F0E68C', // 卡其色
 ];
 
-// ========== Undo/Redo 系统 ==========
-
-// 保存场景状态快照
-function saveState(actionType: string, actionData: any): void {
-  if (isUndoRedoOperation) return;
-
-  const action: DSLAction = {
-    type: actionType,
-    payload: actionData,
-    timestamp: new Date().toLocaleTimeString(),
-    previousState: JSON.parse(JSON.stringify(engine.getScene())),
-  };
-
-  undoStack.push(action);
-  redoStack.length = 0; // 清空重做栈
-
-  // 限制历史记录数量
-  if (undoStack.length > 50) {
-    undoStack.shift();
-  }
-
-  updateUndoRedoButtons(undoStack, redoStack);
-  log(`🔄 操作已记录: ${actionType}`);
-}
-
-// 撤销操作
-(window as any).undo = function (): void {
-  if (undoStack.length === 0) {
-    log('⚠️ 没有可撤销的操作');
-    return;
-  }
-
-  isUndoRedoOperation = true;
-
-  const action = undoStack.pop()!;
-  redoStack.push({
-    ...action,
-    currentState: JSON.parse(JSON.stringify(engine.getScene())),
-  });
-
-  // 恢复到上一个状态
-  restoreSceneState(action.previousState);
-
-  isUndoRedoOperation = false;
-  updateUndoRedoButtons(undoStack, redoStack);
-  log(`↶ 撤销操作: ${action.type}`);
-};
-
-// 重做操作
-(window as any).redo = function (): void {
-  if (redoStack.length === 0) {
-    log('⚠️ 没有可重做的操作');
-    return;
-  }
-
-  isUndoRedoOperation = true;
-
-  const action = redoStack.pop()!;
-  undoStack.push(action);
-
-  // 恢复到重做状态
-  restoreSceneState(action.currentState);
-
-  isUndoRedoOperation = false;
-  updateUndoRedoButtons(undoStack, redoStack);
-  log(`↷ 重做操作: ${action.type}`);
-};
+// ========== 工具函数 ==========
 
 // 恢复场景状态
 function restoreSceneState(sceneState: DSLScene): void {
@@ -126,13 +60,99 @@ function restoreSceneState(sceneState: DSLScene): void {
   objectCount = sceneState.objects.length;
 }
 
+// 设置键盘快捷键
+function setupKeyboardShortcuts(): void {
+  document.addEventListener('keydown', (event) => {
+    if (event.ctrlKey || event.metaKey) {
+      switch (event.key) {
+        case 'z':
+          event.preventDefault();
+          (window as any).undo();
+          break;
+        case 'y':
+          event.preventDefault();
+          (window as any).redo();
+          break;
+      }
+    }
+  });
+}
+
+// ========== Undo/Redo 系统 ==========
+
+// 保存场景状态快照
+function saveState(actionType: string, actionData: any): void {
+  if (isUndoRedoOperation) return;
+
+  const action: DSLAction = {
+    type: actionType,
+    payload: actionData,
+    timestamp: new Date().toLocaleTimeString(),
+    previousState: JSON.parse(JSON.stringify(engine.getScene())),
+  };
+
+  undoStack.push(action);
+  redoStack.length = 0; // 清空重做栈
+
+  // 限制历史记录数量
+  if (undoStack.length > 50) {
+    undoStack.shift();
+  }
+
+  updateUndoRedoButtons(undoStack, redoStack);
+  log(`🔄 操作已记录: ${actionType}`);
+}
+
+// 撤销操作
+function undoOperation(): void {
+  if (undoStack.length === 0) {
+    log('⚠️ 没有可撤销的操作');
+    return;
+  }
+
+  isUndoRedoOperation = true;
+
+  const action = undoStack.pop()!;
+  redoStack.push({
+    ...action,
+    currentState: JSON.parse(JSON.stringify(engine.getScene())),
+  });
+
+  // 恢复到上一个状态
+  restoreSceneState(action.previousState);
+
+  isUndoRedoOperation = false;
+  updateUndoRedoButtons(undoStack, redoStack);
+  log(`↶ 撤销操作: ${action.type}`);
+}
+
+// 重做操作
+function redoOperation(): void {
+  if (redoStack.length === 0) {
+    log('⚠️ 没有可重做的操作');
+    return;
+  }
+
+  isUndoRedoOperation = true;
+
+  const action = redoStack.pop()!;
+  undoStack.push(action);
+
+  // 恢复到重做状态
+  restoreSceneState(action.currentState);
+
+  isUndoRedoOperation = false;
+  updateUndoRedoButtons(undoStack, redoStack);
+  log(`↷ 重做操作: ${action.type}`);
+}
+
 // 清空历史记录
-(window as any).clearHistory = function (): void {
+function clearHistoryOperation(): void {
   undoStack.length = 0;
   redoStack.length = 0;
   updateUndoRedoButtons(undoStack, redoStack);
   log('🗑️ 历史记录已清空');
-};
+}
 
 // ========== 初始化系统 ==========
 
@@ -186,28 +206,10 @@ function init(): void {
   }
 }
 
-// 设置键盘快捷键
-function setupKeyboardShortcuts(): void {
-  document.addEventListener('keydown', (event) => {
-    if (event.ctrlKey || event.metaKey) {
-      switch (event.key) {
-        case 'z':
-          event.preventDefault();
-          (window as any).undo();
-          break;
-        case 'y':
-          event.preventDefault();
-          (window as any).redo();
-          break;
-      }
-    }
-  });
-}
-
 // ========== 对象创建方法 ==========
 
 // 添加立方体
-(window as any).addCube = function (): void {
+function addCubeOperation(): void {
   const objectData = {
     name: `立方体_${++objectCount}`,
     type: 'mesh',
@@ -228,10 +230,10 @@ function setupKeyboardShortcuts(): void {
   saveState('ADD_OBJECT', objectData);
   const id = engine.addObject(objectData);
   log(`📦 添加立方体: ${id}`);
-};
+}
 
 // 添加球体
-(window as any).addSphere = function (): void {
+function addSphereOperation(): void {
   const objectData = {
     name: `球体_${++objectCount}`,
     type: 'mesh',
@@ -254,10 +256,10 @@ function setupKeyboardShortcuts(): void {
   saveState('ADD_OBJECT', objectData);
   const id = engine.addObject(objectData);
   log(`🔮 添加球体: ${id}`);
-};
+}
 
 // 添加平面
-(window as any).addPlane = function (): void {
+function addPlaneOperation(): void {
   const objectData = {
     name: `平面_${++objectCount}`,
     type: 'mesh',
@@ -279,10 +281,10 @@ function setupKeyboardShortcuts(): void {
   saveState('ADD_OBJECT', objectData);
   const id = engine.addObject(objectData);
   log(`📄 添加平面: ${id}`);
-};
+}
 
 // 添加圆柱
-(window as any).addCylinder = function (): void {
+function addCylinderOperation(): void {
   const objectData = {
     name: `圆柱_${++objectCount}`,
     type: 'mesh',
@@ -305,22 +307,22 @@ function setupKeyboardShortcuts(): void {
   saveState('ADD_OBJECT', objectData);
   const id = engine.addObject(objectData);
   log(`🏛️ 添加圆柱: ${id}`);
-};
+}
 
 // ========== 材质控制方法 ==========
 
 // 切换到标准材质
-(window as any).changeToStandard = function (): void {
+function changeToStandardOperation(): void {
   const scene = engine.getScene();
   const objectIds = scene.objects.map((obj) => obj.id);
 
   saveState('APPLY_MATERIAL', { objectIds, materialId: 'default' });
   engine.applyMaterial(objectIds, 'default');
   log('🎨 应用标准材质');
-};
+}
 
 // 切换到线框模式
-(window as any).changeToWireframe = function (): void {
+function changeToWireframeOperation(): void {
   const wireframeMaterial = {
     name: '线框材质',
     type: 'wireframe',
@@ -334,10 +336,10 @@ function setupKeyboardShortcuts(): void {
   const materialId = engine.addMaterial(wireframeMaterial);
   engine.applyMaterial(objectIds, materialId);
   log('🔗 应用线框材质');
-};
+}
 
 // 随机颜色
-(window as any).randomColors = function (): void {
+function randomColorsOperation(): void {
   const scene = engine.getScene();
   const materials: any[] = [];
 
@@ -362,10 +364,10 @@ function setupKeyboardShortcuts(): void {
   });
 
   log('🌈 应用随机颜色材质');
-};
+}
 
 // 黄金材质
-(window as any).applyGolden = function (): void {
+function applyGoldenOperation(): void {
   const goldenMaterial = {
     name: '黄金材质',
     type: 'standard',
@@ -383,12 +385,12 @@ function setupKeyboardShortcuts(): void {
   const materialId = engine.addMaterial(goldenMaterial);
   engine.applyMaterial(objectIds, materialId);
   log('✨ 应用黄金材质');
-};
+}
 
 // ========== 光照控制方法 ==========
 
 // 切换环境光
-(window as any).toggleAmbient = function (): void {
+function toggleAmbientOperation(): void {
   const scene = engine.getScene();
   const ambientLight = scene.lights.find((light) => light.type === 'ambient');
   if (ambientLight) {
@@ -402,10 +404,10 @@ function setupKeyboardShortcuts(): void {
     });
     log(`💡 环境光${newIntensity > 0 ? '开启' : '关闭'}`);
   }
-};
+}
 
 // 切换平行光
-(window as any).toggleDirectional = function (): void {
+function toggleDirectionalOperation(): void {
   const scene = engine.getScene();
   const directionalLight = scene.lights.find((light) => light.type === 'directional');
   if (directionalLight) {
@@ -419,10 +421,10 @@ function setupKeyboardShortcuts(): void {
     });
     log(`☀️ 平行光${newIntensity > 0 ? '开启' : '关闭'}`);
   }
-};
+}
 
 // 添加点光源
-(window as any).addPointLight = function (): void {
+function addPointLightOperation(): void {
   const lightData = {
     name: '点光源',
     type: 'point',
@@ -443,10 +445,10 @@ function setupKeyboardShortcuts(): void {
     payload: lightData,
   });
   log('💡 添加点光源');
-};
+}
 
 // 切换背景
-(window as any).changeBackground = function (): void {
+function changeBackgroundOperation(): void {
   const oldBackground = backgrounds[backgroundIndex];
   backgroundIndex = (backgroundIndex + 1) % backgrounds.length;
 
@@ -460,12 +462,12 @@ function setupKeyboardShortcuts(): void {
   threeScene.background = new Color(backgrounds[backgroundIndex]);
 
   log(`🎨 背景色切换为: ${backgrounds[backgroundIndex]}`);
-};
+}
 
 // ========== 场景管理方法 ==========
 
 // 清空场景
-(window as any).clearScene = function (): void {
+function clearSceneOperation(): void {
   const scene = engine.getScene();
   const objectsToRemove = [...scene.objects];
 
@@ -476,10 +478,10 @@ function setupKeyboardShortcuts(): void {
   });
   objectCount = 0;
   log('🗑️ 场景已清空');
-};
+}
 
 // 重置相机
-(window as any).resetCamera = function (): void {
+function resetCameraOperation(): void {
   const cameraData = {
     position: new Vector3(5, 5, 5),
     target: new Vector3(0, 0, 0),
@@ -492,7 +494,28 @@ function setupKeyboardShortcuts(): void {
     payload: cameraData,
   });
   log('📷 相机已重置');
-};
+}
+
+// ========== 全局函数暴露 ==========
+
+// 暴露到全局作用域供HTML调用
+(window as any).undo = undoOperation;
+(window as any).redo = redoOperation;
+(window as any).clearHistory = clearHistoryOperation;
+(window as any).addCube = addCubeOperation;
+(window as any).addSphere = addSphereOperation;
+(window as any).addPlane = addPlaneOperation;
+(window as any).addCylinder = addCylinderOperation;
+(window as any).changeToStandard = changeToStandardOperation;
+(window as any).changeToWireframe = changeToWireframeOperation;
+(window as any).randomColors = randomColorsOperation;
+(window as any).applyGolden = applyGoldenOperation;
+(window as any).toggleAmbient = toggleAmbientOperation;
+(window as any).toggleDirectional = toggleDirectionalOperation;
+(window as any).addPointLight = addPointLightOperation;
+(window as any).changeBackground = changeBackgroundOperation;
+(window as any).clearScene = clearSceneOperation;
+(window as any).resetCamera = resetCameraOperation;
 
 // 启动应用
 document.addEventListener('DOMContentLoaded', init);
