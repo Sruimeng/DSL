@@ -1,9 +1,9 @@
-// TripoScript DSL 基础演示 - 带 Undo/Redo 功能
+// TripoScript DSL 基础演示 - 使用引擎内置 Undo/Redo 功能
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-nocheck
 import { Color, Vector3 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { DSLEngine, DSLRenderer, type DSLAction, type DSLScene } from '../../src/index.js';
+import { DSLEngine, DSLRenderer } from '../../src/index.js';
 import { animate, log, setupResize, updateStats, updateUndoRedoButtons } from './utils.ts';
 
 // 全局变量
@@ -12,11 +12,6 @@ let renderer: DSLRenderer;
 let controls: OrbitControls;
 let objectCount = 0;
 let backgroundIndex = 0;
-
-// Undo/Redo 系统
-const undoStack: DSLAction[] = [];
-const redoStack: DSLAction[] = [];
-let isUndoRedoOperation = false;
 
 // 预定义背景色
 const backgrounds = [
@@ -30,34 +25,32 @@ const backgrounds = [
 
 // ========== 工具函数 ==========
 
-// 恢复场景状态
-function restoreSceneState(sceneState: DSLScene): void {
-  // 清空当前场景
-  const currentScene = engine.getScene();
-  currentScene.objects.forEach((obj) => {
-    engine.removeObject(obj.id);
-  });
+// 更新UI状态
+function updateUIState(): void {
+  const canUndo = engine.canUndo();
+  const canRedo = engine.canRedo();
 
-  // 重建对象
-  sceneState.objects.forEach((obj) => {
-    engine.addObject(obj);
-  });
+  // 更新按钮状态（传入空数组，因为我们使用引擎的状态）
+  updateUndoRedoButtons([], []);
 
-  // 重建材质
-  sceneState.materials.forEach((material) => {
-    engine.addMaterial(material);
-  });
+  // 更新按钮可用性
+  const undoBtn = document.querySelector('[onclick="undo()"]') as HTMLButtonElement;
+  const redoBtn = document.querySelector('[onclick="redo()"]') as HTMLButtonElement;
 
-  // 重建光源
-  sceneState.lights.forEach((light) => {
-    engine.dispatch({
-      type: 'ADD_LIGHT',
-      payload: light,
-    });
-  });
+  if (undoBtn) {
+    undoBtn.disabled = !canUndo;
+    undoBtn.style.opacity = canUndo ? '1' : '0.5';
+  }
 
-  // 更新计数器
-  objectCount = sceneState.objects.length;
+  if (redoBtn) {
+    redoBtn.disabled = !canRedo;
+    redoBtn.style.opacity = canRedo ? '1' : '0.5';
+  }
+
+  console.log('🔄 UI状态更新:', {
+    可撤销: canUndo,
+    可重做: canRedo,
+  });
 }
 
 // 设置键盘快捷键
@@ -78,158 +71,50 @@ function setupKeyboardShortcuts(): void {
   });
 }
 
-// ========== Undo/Redo 系统 ==========
-
-// 保存场景状态快照
-function saveState(actionType: string, actionData: any): void {
-  if (isUndoRedoOperation) return;
-
-  const currentScene = JSON.parse(JSON.stringify(engine.getScene()));
-  const action: DSLAction = {
-    type: actionType,
-    payload: actionData,
-    timestamp: new Date().toLocaleTimeString(),
-    previousState: currentScene,
-  };
-
-  // 打印操作记录信息
-  console.log('💾 记录操作状态:', {
-    操作类型: actionType,
-    操作时间: action.timestamp,
-    场景状态快照: {
-      对象数量: currentScene.objects.length,
-      材质数量: currentScene.materials.length,
-      光源数量: currentScene.lights.length,
-      对象列表: currentScene.objects.map((obj) => ({
-        id: obj.id,
-        name: obj.name,
-        type: obj.type,
-      })),
-    },
-    操作载荷: actionData,
-    撤销栈长度: undoStack.length + 1,
-    重做栈长度: redoStack.length,
-  });
-
-  undoStack.push(action);
-  redoStack.length = 0; // 清空重做栈
-
-  // 限制历史记录数量
-  if (undoStack.length > 50) {
-    undoStack.shift();
-  }
-
-  updateUndoRedoButtons(undoStack, redoStack);
-  log(`🔄 操作已记录: ${actionType} (${action.timestamp})`);
-}
+// ========== Undo/Redo 系统（使用引擎功能）==========
 
 // 撤销操作
 function undoOperation(): void {
-  if (undoStack.length === 0) {
+  const success = engine.undo();
+
+  if (success) {
+    log('↶ 撤销操作成功');
+    console.log('🔄 撤销操作:', {
+      当前场景状态: {
+        对象数量: engine.getScene().objects.length,
+        材质数量: engine.getScene().materials.length,
+        光源数量: engine.getScene().lights.length,
+      },
+      可撤销: engine.canUndo(),
+      可重做: engine.canRedo(),
+    });
+  } else {
     log('⚠️ 没有可撤销的操作');
-    return;
   }
 
-  isUndoRedoOperation = true;
-
-  const action = undoStack.pop()!;
-  const currentState = JSON.parse(JSON.stringify(engine.getScene()));
-
-  redoStack.push({
-    ...action,
-    currentState: currentState,
-  });
-
-  // 打印详细的撤销信息
-  console.log('🔄 执行撤销操作:', {
-    操作类型: action.type,
-    操作时间: action.timestamp,
-    当前场景状态: {
-      对象数量: currentState.objects.length,
-      材质数量: currentState.materials.length,
-      光源数量: currentState.lights.length,
-      对象列表: currentState.objects.map((obj) => ({
-        id: obj.id,
-        name: obj.name,
-        type: obj.type,
-      })),
-    },
-    恢复到场景状态: {
-      对象数量: action.previousState.objects.length,
-      材质数量: action.previousState.materials.length,
-      光源数量: action.previousState.lights.length,
-      对象列表: action.previousState.objects.map((obj) => ({
-        id: obj.id,
-        name: obj.name,
-        type: obj.type,
-      })),
-    },
-    操作载荷: action.payload,
-  });
-
-  // 恢复到上一个状态
-  restoreSceneState(action.previousState);
-
-  isUndoRedoOperation = false;
-  updateUndoRedoButtons(undoStack, redoStack);
-  log(`↶ 撤销操作: ${action.type} (时间: ${action.timestamp})`);
+  updateUIState();
 }
 
 // 重做操作
 function redoOperation(): void {
-  if (redoStack.length === 0) {
+  const success = engine.redo();
+
+  if (success) {
+    log('↷ 重做操作成功');
+    console.log('🔄 重做操作:', {
+      当前场景状态: {
+        对象数量: engine.getScene().objects.length,
+        材质数量: engine.getScene().materials.length,
+        光源数量: engine.getScene().lights.length,
+      },
+      可撤销: engine.canUndo(),
+      可重做: engine.canRedo(),
+    });
+  } else {
     log('⚠️ 没有可重做的操作');
-    return;
   }
 
-  isUndoRedoOperation = true;
-
-  const action = redoStack.pop()!;
-  const currentState = JSON.parse(JSON.stringify(engine.getScene()));
-
-  undoStack.push(action);
-
-  // 打印详细的重做信息
-  console.log('🔄 执行重做操作:', {
-    操作类型: action.type,
-    操作时间: action.timestamp,
-    当前场景状态: {
-      对象数量: currentState.objects.length,
-      材质数量: currentState.materials.length,
-      光源数量: currentState.lights.length,
-      对象列表: currentState.objects.map((obj) => ({
-        id: obj.id,
-        name: obj.name,
-        type: obj.type,
-      })),
-    },
-    恢复到场景状态: {
-      对象数量: action.currentState.objects.length,
-      材质数量: action.currentState.materials.length,
-      光源数量: action.currentState.lights.length,
-      对象列表: action.currentState.objects.map((obj) => ({
-        id: obj.id,
-        name: obj.name,
-        type: obj.type,
-      })),
-    },
-    操作载荷: action.payload,
-  });
-
-  // 恢复到重做状态
-  restoreSceneState(action.currentState);
-
-  isUndoRedoOperation = false;
-  updateUndoRedoButtons(undoStack, redoStack);
-  log(`↷ 重做操作: ${action.type} (时间: ${action.timestamp})`);
-}
-
-// 清空历史记录
-function clearHistoryOperation(): void {
-  undoStack.length = 0;
-  redoStack.length = 0;
-  updateUndoRedoButtons(undoStack, redoStack);
-  log('🗑️ 历史记录已清空');
+  updateUIState();
 }
 
 // ========== 初始化系统 ==========
@@ -259,8 +144,11 @@ function init(): void {
     controls.minDistance = 1;
     controls.maxDistance = 100;
 
-    // 监听场景变化
-    engine.subscribe(updateStats);
+    // 监听场景变化 - 包括更新UI状态
+    engine.subscribe((scene) => {
+      updateStats(scene);
+      updateUIState();
+    });
 
     // 启动渲染循环
     animate(controls);
@@ -268,8 +156,8 @@ function init(): void {
     // 设置窗口大小调整
     setupResize(renderer);
 
-    // 初始化 undo/redo 按钮状态
-    updateUndoRedoButtons(undoStack, redoStack);
+    // 初始化UI状态
+    updateUIState();
 
     // 设置键盘快捷键
     setupKeyboardShortcuts();
@@ -279,7 +167,7 @@ function init(): void {
     log('🎮 轨道控制器已启用');
     log('⌨️ 快捷键: Ctrl+Z(撤销) / Ctrl+Y(重做)');
     log('📊 场景统计信息将实时更新');
-    log('🔍 打开浏览器控制台查看详细的undo/redo信息');
+    log('🔍 使用引擎内置的undo/redo功能');
   } catch (error) {
     console.error('初始化失败:', error);
     log('❌ 初始化失败: ' + error);
@@ -307,7 +195,6 @@ function addCubeOperation(): void {
     material: { id: 'default' },
   };
 
-  saveState('ADD_OBJECT', objectData);
   const id = engine.addObject(objectData);
   log(`📦 添加立方体: ${id}`);
 }
@@ -333,7 +220,6 @@ function addSphereOperation(): void {
     material: { id: 'default' },
   };
 
-  saveState('ADD_OBJECT', objectData);
   const id = engine.addObject(objectData);
   log(`🔮 添加球体: ${id}`);
 }
@@ -358,7 +244,6 @@ function addPlaneOperation(): void {
     material: { id: 'default' },
   };
 
-  saveState('ADD_OBJECT', objectData);
   const id = engine.addObject(objectData);
   log(`📄 添加平面: ${id}`);
 }
@@ -384,7 +269,6 @@ function addCylinderOperation(): void {
     material: { id: 'default' },
   };
 
-  saveState('ADD_OBJECT', objectData);
   const id = engine.addObject(objectData);
   log(`🏛️ 添加圆柱: ${id}`);
 }
@@ -396,7 +280,6 @@ function changeToStandardOperation(): void {
   const scene = engine.getScene();
   const objectIds = scene.objects.map((obj) => obj.id);
 
-  saveState('APPLY_MATERIAL', { objectIds, materialId: 'default' });
   engine.applyMaterial(objectIds, 'default');
   log('🎨 应用标准材质');
 }
@@ -412,7 +295,6 @@ function changeToWireframeOperation(): void {
   const scene = engine.getScene();
   const objectIds = scene.objects.map((obj) => obj.id);
 
-  saveState('APPLY_MATERIAL', { objectIds, material: wireframeMaterial });
   const materialId = engine.addMaterial(wireframeMaterial);
   engine.applyMaterial(objectIds, materialId);
   log('🔗 应用线框材质');
@@ -421,7 +303,6 @@ function changeToWireframeOperation(): void {
 // 随机颜色
 function randomColorsOperation(): void {
   const scene = engine.getScene();
-  const materials: any[] = [];
 
   scene.objects.forEach((obj) => {
     const color = `#${Math.floor(Math.random() * 16777215)
@@ -433,14 +314,9 @@ function randomColorsOperation(): void {
       metalness: Math.random() * 0.3,
       roughness: Math.random() * 0.5 + 0.2,
     };
-    materials.push({ objectId: obj.id, material });
-  });
 
-  saveState('APPLY_MATERIAL', { type: 'random', materials });
-
-  materials.forEach(({ objectId, material }) => {
     const materialId = engine.addMaterial(material);
-    engine.applyMaterial([objectId], materialId);
+    engine.applyMaterial([obj.id], materialId);
   });
 
   log('🌈 应用随机颜色材质');
@@ -461,7 +337,6 @@ function applyGoldenOperation(): void {
   const scene = engine.getScene();
   const objectIds = scene.objects.map((obj) => obj.id);
 
-  saveState('APPLY_MATERIAL', { objectIds, material: goldenMaterial });
   const materialId = engine.addMaterial(goldenMaterial);
   engine.applyMaterial(objectIds, materialId);
   log('✨ 应用黄金材质');
@@ -475,12 +350,9 @@ function toggleAmbientOperation(): void {
   const ambientLight = scene.lights.find((light) => light.type === 'ambient');
   if (ambientLight) {
     const newIntensity = (ambientLight.intensity || 0) > 0 ? 0 : 0.4;
-    const lightData = { id: ambientLight.id, changes: { intensity: newIntensity } };
-
-    saveState('UPDATE_LIGHT', lightData);
     engine.dispatch({
       type: 'UPDATE_LIGHT',
-      payload: lightData,
+      payload: { id: ambientLight.id, changes: { intensity: newIntensity } },
     });
     log(`💡 环境光${newIntensity > 0 ? '开启' : '关闭'}`);
   }
@@ -492,12 +364,9 @@ function toggleDirectionalOperation(): void {
   const directionalLight = scene.lights.find((light) => light.type === 'directional');
   if (directionalLight) {
     const newIntensity = (directionalLight.intensity || 0) > 0 ? 0 : 0.8;
-    const lightData = { id: directionalLight.id, changes: { intensity: newIntensity } };
-
-    saveState('UPDATE_LIGHT', lightData);
     engine.dispatch({
       type: 'UPDATE_LIGHT',
-      payload: lightData,
+      payload: { id: directionalLight.id, changes: { intensity: newIntensity } },
     });
     log(`☀️ 平行光${newIntensity > 0 ? '开启' : '关闭'}`);
   }
@@ -519,7 +388,6 @@ function addPointLightOperation(): void {
     decay: 2,
   };
 
-  saveState('ADD_LIGHT', lightData);
   engine.dispatch({
     type: 'ADD_LIGHT',
     payload: lightData,
@@ -529,13 +397,7 @@ function addPointLightOperation(): void {
 
 // 切换背景
 function changeBackgroundOperation(): void {
-  const oldBackground = backgrounds[backgroundIndex];
   backgroundIndex = (backgroundIndex + 1) % backgrounds.length;
-
-  saveState('CHANGE_BACKGROUND', {
-    oldColor: oldBackground,
-    newColor: backgrounds[backgroundIndex],
-  });
 
   // 通过渲染器直接设置背景色
   const threeScene = renderer.getThreeScene();
@@ -551,8 +413,6 @@ function clearSceneOperation(): void {
   const scene = engine.getScene();
   const objectsToRemove = [...scene.objects];
 
-  saveState('CLEAR_SCENE', { objects: objectsToRemove });
-
   objectsToRemove.forEach((obj) => {
     engine.removeObject(obj.id);
   });
@@ -567,7 +427,6 @@ function resetCameraOperation(): void {
     target: new Vector3(0, 0, 0),
   };
 
-  saveState('UPDATE_CAMERA', cameraData);
   controls.reset();
   engine.dispatch({
     type: 'UPDATE_CAMERA',
@@ -582,7 +441,6 @@ function resetCameraOperation(): void {
 function exposeGlobalFunctions(): void {
   (window as any).undo = undoOperation;
   (window as any).redo = redoOperation;
-  (window as any).clearHistory = clearHistoryOperation;
   (window as any).addCube = addCubeOperation;
   (window as any).addSphere = addSphereOperation;
   (window as any).addPlane = addPlaneOperation;
