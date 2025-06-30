@@ -26,6 +26,9 @@ importers:
       eslint-config-prettier:
         specifier: ^10.1.5
         version: 10.1.5(eslint@8.57.0)
+      fflate:
+        specifier: ^0.8.2
+        version: 0.8.2
       html2canvas:
         specifier: ^1.4.1
         version: 1.4.1

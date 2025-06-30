@@ -1,7 +1,7 @@
 // DSL模型加载和解析系统
-import { FBXLoader } from '@/engine/loaders/fbx';
-import { GLTFLoader } from '@/engine/loaders/gltf';
 import * as THREE from 'three';
+import { FBXLoader } from '../../loaders/fbx';
+import { GLTFLoader } from '../../loaders/gltf';
 import type { DSLScene, GeometryInline, Light, MaterialInline, SceneObject } from '../types/core';
 
 // 支持的模型格式
