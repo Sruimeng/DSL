@@ -49,7 +49,7 @@ function init(): void {
     controls.maxDistance = 100;
 
     // 监听场景变化
-    engine.subscribe(updateStats(engine.getScene()));
+    engine.subscribe(updateStats);
 
     // 启动渲染循环
     animate(controls);
