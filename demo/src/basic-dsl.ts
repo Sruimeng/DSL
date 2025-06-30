@@ -25,6 +25,48 @@ const backgrounds = [
 
 // ========== 工具函数 ==========
 
+// 更新历史统计显示
+function updateHistoryDisplay(stats: any): void {
+  // 找到或创建统计信息显示元素
+  let statsDisplay = document.getElementById('history-stats');
+  if (!statsDisplay) {
+    statsDisplay = document.createElement('div');
+    statsDisplay.id = 'history-stats';
+    statsDisplay.style.cssText = `
+      position: fixed;
+      top: 10px;
+      right: 10px;
+      background: rgba(0,0,0,0.8);
+      color: white;
+      padding: 10px;
+      border-radius: 5px;
+      font-family: monospace;
+      font-size: 12px;
+      z-index: 1000;
+      min-width: 200px;
+    `;
+    document.body.appendChild(statsDisplay);
+  }
+
+  // 更新显示内容
+  statsDisplay.innerHTML = `
+    <div><strong>📚 历史统计</strong></div>
+    <div>Actions: ${stats.totalActions}</div>
+    <div>当前索引: ${stats.currentIndex}</div>
+    <div>内存占用: ~${stats.memoryUsageKB}KB</div>
+    <div>可撤销: ${stats.canUndo ? '✅' : '❌'}</div>
+    <div>可重做: ${stats.canRedo ? '✅' : '❌'}</div>
+    ${
+      stats.recentActions.length > 0
+        ? `
+    <div style="margin-top: 5px;"><strong>最近Actions:</strong></div>
+    ${stats.recentActions.map((action: any) => `<div>• ${action.type}</div>`).join('')}
+    `
+        : ''
+    }
+  `;
+}
+
 // 更新UI状态
 function updateUIState(): void {
   const canUndo = engine.canUndo();
@@ -47,9 +89,18 @@ function updateUIState(): void {
     redoBtn.style.opacity = canRedo ? '1' : '0.5';
   }
 
+  // 显示历史统计信息
+  const historyStats = engine.getHistoryStats();
+  console.log('📊 历史统计:', historyStats);
+
+  // 更新页面上的统计信息显示
+  updateHistoryDisplay(historyStats);
+
   console.log('🔄 UI状态更新:', {
     可撤销: canUndo,
     可重做: canRedo,
+    Action历史长度: historyStats.totalActions,
+    内存占用: `${historyStats.memoryUsageKB}KB`,
   });
 }
 

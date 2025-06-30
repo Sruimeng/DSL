@@ -7,15 +7,52 @@ import {
   type DSLScene,
   type Environment,
   type Light,
-  type Material,
   type MaterialInline,
   type SceneObject,
 } from '../types';
 
 /**
+ * 历史记录条目 - 使用状态快照而非逆操作
+ */
+interface HistoryEntry {
+  action: DSLAction;
+  beforeState: DSLScene; // action执行前的完整状态
+  afterState: DSLScene; // action执行后的完整状态
+  timestamp: number;
+}
+
+/**
+ * 深度克隆，保持Three.js对象类型
+ */
+function deepClone(obj: any): any {
+  if (obj === null || typeof obj !== 'object') {
+    return obj;
+  }
+
+  if (obj instanceof Vector3) {
+    return new Vector3(obj.x, obj.y, obj.z);
+  }
+
+  if (obj instanceof Date) {
+    return new Date(obj.getTime());
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map((item) => deepClone(item));
+  }
+
+  const cloned: any = {};
+  for (const key in obj) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
+      cloned[key] = deepClone(obj[key]);
+    }
+  }
+
+  return cloned;
+}
+
+/**
  * 创建默认场景
- * @param partial - 部分场景数据
- * @returns 默认场景
  */
 function createDefaultScene(partial?: Partial<DSLScene>): DSLScene {
   const now = Date.now();
@@ -37,20 +74,21 @@ function createDefaultScene(partial?: Partial<DSLScene>): DSLScene {
     ],
     lights: [
       {
-        id: 'ambient',
-        name: 'Ambient Light',
+        id: 'ambient-light',
         type: 'ambient',
-        color: '#ffffff',
+        name: 'Ambient Light',
+        color: '#404040',
         intensity: 0.4,
       },
       {
-        id: 'directional',
-        name: 'Sun Light',
+        id: 'directional-light',
         type: 'directional',
+        name: 'Directional Light',
         color: '#ffffff',
         intensity: 0.8,
-        position: new Vector3(5, 5, 5),
+        position: new Vector3(5, 10, 5),
         target: new Vector3(0, 0, 0),
+        castShadow: true,
       },
     ],
     camera: {
@@ -58,7 +96,6 @@ function createDefaultScene(partial?: Partial<DSLScene>): DSLScene {
       position: new Vector3(5, 5, 5),
       target: new Vector3(0, 0, 0),
       fov: 75,
-      aspect: 1,
       near: 0.1,
       far: 1000,
     },
@@ -67,50 +104,91 @@ function createDefaultScene(partial?: Partial<DSLScene>): DSLScene {
     },
     selection: [],
     metadata: {
+      version: '1.0.0',
       created: now,
       modified: now,
-      version: '2.1',
     },
     ...partial,
   };
 }
 
-// DSL引擎核心类
+/**
+ * 计算对象大小（用于内存统计）
+ */
+function calculateObjectSize(obj: any): number {
+  const seen = new WeakSet();
+
+  function getSize(obj: any): number {
+    if (obj === null || obj === undefined) return 0;
+    if (typeof obj === 'boolean') return 4;
+    if (typeof obj === 'number') return 8;
+    if (typeof obj === 'string') return obj.length * 2;
+
+    if (typeof obj === 'object') {
+      if (seen.has(obj)) return 0;
+      seen.add(obj);
+
+      let size = 0;
+      if (Array.isArray(obj)) {
+        size = obj.reduce((acc, item) => acc + getSize(item), 0);
+      } else {
+        size = Object.keys(obj).reduce((acc, key) => {
+          return acc + key.length * 2 + getSize(obj[key]);
+        }, 0);
+      }
+      return size;
+    }
+
+    return 0;
+  }
+
+  return getSize(obj);
+}
+
+/**
+ * DSL引擎类 - 使用改进的状态快照式undo/redo系统
+ */
 export class DSLEngine {
   private scene: DSLScene;
   private listeners: Set<(scene: DSLScene) => void> = new Set();
-  private history: DSLScene[] = [];
+
+  // 改进的历史记录系统
+  private actionHistory: HistoryEntry[] = [];
   private historyIndex = -1;
-  private maxHistorySize = 50;
+  private maxHistorySize = 50; // 减少内存占用
+  private isUndoRedoing = false; // 防止undo/redo操作被记录到历史
 
   constructor(initialScene?: Partial<DSLScene>) {
     this.scene = createDefaultScene(initialScene);
-    this.saveToHistory();
   }
 
-  // 辅助方法：检查是否是子孙节点（避免循环引用）
   private isDescendant(scene: DSLScene, ancestorId: string, nodeId: string): boolean {
     const node = scene.objects.find((obj) => obj.id === nodeId);
-    if (!node || !node.children) return false;
+    if (!node || !node.parent) return false;
 
-    for (const childId of node.children) {
-      if (childId === ancestorId) return true;
-      if (this.isDescendant(scene, ancestorId, childId)) return true;
-    }
+    if (node.parent === ancestorId) return true;
 
-    return false;
+    return this.isDescendant(scene, ancestorId, node.parent);
   }
 
-  // 执行Action - 唯一修改状态的方式
+  /**
+   * 执行Action - 改进版本，使用状态快照
+   */
   dispatch(action: DSLAction): void {
+    // 记录执行前的状态（深拷贝）
+    const beforeState = !this.isUndoRedoing ? deepClone(this.scene) : null;
+
+    // 执行action
     const newScene = this.reduce(this.scene, action);
 
     if (newScene !== this.scene) {
       // 更新场景
       this.scene = newScene;
 
-      // 保存新状态到历史
-      this.saveToHistory();
+      // 只有在非undo/redo操作时才保存到历史
+      if (!this.isUndoRedoing && beforeState) {
+        this.saveActionToHistory(action, beforeState, this.scene);
+      }
 
       // 通知所有监听器
       this.notifyListeners();
@@ -303,14 +381,11 @@ export class DSLEngine {
 
       case 'UPDATE_MATERIAL': {
         const { id, changes } = action.payload;
-        const materialIndex = scene.materials.findIndex((mat) => (mat as any).id === id);
+        const materialIndex = scene.materials.findIndex((mat) => mat.id === id);
         if (materialIndex === -1) return scene;
 
         const updatedMaterials = [...scene.materials];
-        updatedMaterials[materialIndex] = {
-          ...updatedMaterials[materialIndex],
-          ...changes,
-        } as Material;
+        updatedMaterials[materialIndex] = { ...updatedMaterials[materialIndex], ...changes };
 
         return {
           ...scene,
@@ -321,76 +396,18 @@ export class DSLEngine {
 
       case 'APPLY_MATERIAL': {
         const { objectIds, materialId } = action.payload;
-        const materialExists = scene.materials.some((mat) => (mat as any).id === materialId);
-        if (!materialExists) return scene;
-
-        const updatedObjects = scene.objects.map((obj) =>
+        const objects = scene.objects.map((obj) =>
           objectIds.includes(obj.id) ? { ...obj, material: { id: materialId } } : obj,
         );
 
         return {
           ...scene,
-          objects: updatedObjects,
-          metadata: { ...scene.metadata, modified: Date.now() },
-        };
-      }
-
-      case 'SELECT': {
-        const { ids, mode } = action.payload;
-        let newSelection: string[];
-
-        switch (mode) {
-          case 'set':
-            newSelection = ids.filter((id) => scene.objects.some((obj) => obj.id === id));
-            break;
-          case 'add':
-            newSelection = [
-              ...new Set([
-                ...scene.selection,
-                ...ids.filter((id) => scene.objects.some((obj) => obj.id === id)),
-              ]),
-            ];
-            break;
-          case 'toggle': {
-            const id = ids[0];
-            if (scene.objects.some((obj) => obj.id === id)) {
-              newSelection = scene.selection.includes(id)
-                ? scene.selection.filter((selectedId) => selectedId !== id)
-                : [...scene.selection, id];
-            } else {
-              newSelection = scene.selection;
-            }
-            break;
-          }
-          default:
-            newSelection = scene.selection;
-        }
-
-        return { ...scene, selection: newSelection };
-      }
-
-      case 'CLEAR_SELECTION': {
-        return { ...scene, selection: [] };
-      }
-
-      case 'UPDATE_CAMERA': {
-        return {
-          ...scene,
-          camera: { ...scene.camera, ...action.payload },
-          metadata: { ...scene.metadata, modified: Date.now() },
-        };
-      }
-
-      case 'UPDATE_ENVIRONMENT': {
-        return {
-          ...scene,
-          environment: { ...scene.environment, ...action.payload },
+          objects,
           metadata: { ...scene.metadata, modified: Date.now() },
         };
       }
 
       case 'ADD_LIGHT': {
-        // 优先使用payload中的ID，如果没有则生成新的
         const lightId = action.payload.id || generateUUID();
         const light: Light = {
           id: lightId,
@@ -434,15 +451,70 @@ export class DSLEngine {
         };
       }
 
+      case 'UPDATE_CAMERA': {
+        const updatedCamera = { ...scene.camera, ...action.payload };
+
+        return {
+          ...scene,
+          camera: updatedCamera,
+          metadata: { ...scene.metadata, modified: Date.now() },
+        };
+      }
+
+      case 'UPDATE_ENVIRONMENT': {
+        const updatedEnvironment = { ...scene.environment, ...action.payload };
+
+        return {
+          ...scene,
+          environment: updatedEnvironment,
+          metadata: { ...scene.metadata, modified: Date.now() },
+        };
+      }
+
+      case 'SELECT': {
+        const { ids, mode = 'set' } = action.payload;
+        let newSelection: string[];
+
+        switch (mode) {
+          case 'add':
+            newSelection = [...new Set([...scene.selection, ...ids])];
+            break;
+          case 'toggle':
+            newSelection = scene.selection.slice();
+            ids.forEach((id) => {
+              const index = newSelection.indexOf(id);
+              if (index >= 0) {
+                newSelection.splice(index, 1);
+              } else {
+                newSelection.push(id);
+              }
+            });
+            break;
+          case 'set':
+          default:
+            newSelection = [...ids];
+            break;
+        }
+
+        return {
+          ...scene,
+          selection: newSelection,
+        };
+      }
+
+      case 'CLEAR_SELECTION': {
+        return {
+          ...scene,
+          selection: [],
+        };
+      }
+
       case 'RESET_SCENE': {
         return createDefaultScene();
       }
 
       case 'LOAD_SCENE': {
-        return {
-          ...action.payload,
-          metadata: { ...action.payload.metadata, modified: Date.now() },
-        };
+        return { ...action.payload };
       }
 
       default:
@@ -450,58 +522,155 @@ export class DSLEngine {
     }
   }
 
-  // 历史管理
-  private saveToHistory(): void {
-    // 清除当前位置之后的历史
-    this.history = this.history.slice(0, this.historyIndex + 1);
+  /**
+   * 保存Action到历史记录 - 使用状态快照
+   */
+  private saveActionToHistory(
+    action: DSLAction,
+    beforeState: DSLScene,
+    afterState: DSLScene,
+  ): void {
+    // 清除当前位置之后的历史（用户执行了新操作）
+    if (this.historyIndex < this.actionHistory.length - 1) {
+      this.actionHistory = this.actionHistory.slice(0, this.historyIndex + 1);
+    }
 
-    // 添加当前状态
-    this.history.push(JSON.parse(JSON.stringify(this.scene)));
-    this.historyIndex = this.history.length - 1;
+    // 添加新的历史条目
+    const entry: HistoryEntry = {
+      action,
+      beforeState,
+      afterState: deepClone(afterState),
+      timestamp: Date.now(),
+    };
 
-    // 限制历史大小
-    if (this.history.length > this.maxHistorySize) {
-      this.history.shift();
+    this.actionHistory.push(entry);
+    this.historyIndex++;
+
+    // 限制历史记录大小
+    if (this.actionHistory.length > this.maxHistorySize) {
+      this.actionHistory.shift();
       this.historyIndex--;
     }
+
+    console.log('💾 Action已保存到历史:', {
+      action: action.type,
+      historyLength: this.actionHistory.length,
+      currentIndex: this.historyIndex,
+    });
   }
 
+  /**
+   * 撤销操作 - 改进版本
+   */
   undo(): boolean {
-    if (this.historyIndex > 0) {
-      this.historyIndex--;
-      this.scene = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
-      this.notifyListeners();
-      return true;
+    if (!this.canUndo()) {
+      console.log('⚠️ 无法撤销：没有可撤销的操作');
+      return false;
     }
-    return false;
+
+    const entry = this.actionHistory[this.historyIndex];
+    this.historyIndex--;
+
+    // 标记为undo/redo操作，防止递归记录
+    this.isUndoRedoing = true;
+
+    // 直接恢复到执行action前的状态
+    this.scene = deepClone(entry.beforeState);
+    this.notifyListeners();
+
+    this.isUndoRedoing = false;
+
+    console.log('↶ 撤销成功:', {
+      action: entry.action.type,
+      timestamp: new Date(entry.timestamp).toLocaleTimeString(),
+      currentIndex: this.historyIndex,
+      canUndo: this.canUndo(),
+      canRedo: this.canRedo(),
+    });
+
+    return true;
   }
 
+  /**
+   * 重做操作
+   */
   redo(): boolean {
-    if (this.historyIndex < this.history.length - 1) {
-      this.historyIndex++;
-      this.scene = JSON.parse(JSON.stringify(this.history[this.historyIndex]));
-      this.notifyListeners();
-      return true;
+    if (!this.canRedo()) {
+      console.log('⚠️ 无法重做：没有可重做的操作');
+      return false;
     }
-    return false;
+
+    this.historyIndex++;
+    const entry = this.actionHistory[this.historyIndex];
+    console.log('🔄 重做操作:', entry);
+
+    // 标记为undo/redo操作，防止递归记录
+    this.isUndoRedoing = true;
+
+    // 直接恢复到执行action后的状态
+    this.scene = deepClone(entry.afterState);
+    this.notifyListeners();
+
+    this.isUndoRedoing = false;
+
+    console.log('↷ 重做成功:', {
+      action: entry.action.type,
+      timestamp: new Date(entry.timestamp).toLocaleTimeString(),
+      currentIndex: this.historyIndex,
+      canUndo: this.canUndo(),
+      canRedo: this.canRedo(),
+    });
+
+    return true;
   }
 
+  /**
+   * 检查是否可以撤销
+   */
   canUndo(): boolean {
-    return this.historyIndex > 0;
+    return this.historyIndex >= 0;
   }
 
+  /**
+   * 检查是否可以重做
+   */
   canRedo(): boolean {
-    return this.historyIndex < this.history.length - 1;
+    return this.historyIndex < this.actionHistory.length - 1;
   }
 
-  // 私有方法
+  /**
+   * 获取历史统计信息
+   */
+  getHistoryStats() {
+    const totalMemoryKB =
+      this.actionHistory.reduce((acc, entry) => {
+        return acc + calculateObjectSize(entry.beforeState) + calculateObjectSize(entry.afterState);
+      }, 0) / 1024;
+
+    const recentActions = this.actionHistory.slice(-5).map((entry) => ({
+      type: entry.action.type,
+      timestamp: entry.timestamp,
+    }));
+
+    return {
+      totalActions: this.actionHistory.length,
+      currentIndex: this.historyIndex,
+      maxSize: this.maxHistorySize,
+      memoryUsageKB: Math.round(totalMemoryKB),
+      canUndo: this.canUndo(),
+      canRedo: this.canRedo(),
+      recentActions,
+    };
+  }
+
+  // 通知监听器
   private notifyListeners(): void {
     this.listeners.forEach((listener) => listener(this.scene));
   }
 
-  // 公共方法 - 便捷操作
+  // === 便利方法 ===
   addObject(object: Partial<SceneObject>): string {
-    const id = generateUUID();
+    const id = object.id || generateUUID();
     this.dispatch({ type: ActionTypes.ADD_OBJECT, payload: { ...object, id } });
     return id;
   }
@@ -523,7 +692,7 @@ export class DSLEngine {
   }
 
   addMaterial(material: Partial<MaterialInline>): string {
-    const id = generateUUID();
+    const id = material.id || generateUUID();
     this.dispatch({ type: ActionTypes.ADD_MATERIAL, payload: { ...material, id } });
     return id;
   }
@@ -536,26 +705,26 @@ export class DSLEngine {
     this.dispatch({ type: ActionTypes.UPDATE_ENVIRONMENT, payload: changes });
   }
 
-  // 查询方法
+  // === 查询方法 ===
   getObject(id: string): SceneObject | null {
     return this.scene.objects.find((obj) => obj.id === id) || null;
   }
 
   getSelectedObjects(): SceneObject[] {
-    return this.scene.selection
-      .map((id) => this.scene.objects.find((obj) => obj.id === id))
-      .filter(Boolean) as SceneObject[];
+    return this.scene.objects.filter((obj) => this.scene.selection.includes(obj.id));
   }
 
+  // 按条件查找对象
   findObjects(predicate: (obj: SceneObject) => boolean): SceneObject[] {
     return this.scene.objects.filter(predicate);
   }
 
-  // 导入导出
+  // 导出完整场景
   exportScene(): DSLScene {
-    return JSON.parse(JSON.stringify(this.scene));
+    return deepClone(this.scene);
   }
 
+  // 导入场景
   importScene(scene: DSLScene): void {
     this.dispatch({ type: ActionTypes.LOAD_SCENE, payload: scene });
   }
