@@ -12,6 +12,11 @@ import {
   type SceneObject,
 } from '../types';
 
+/**
+ * 创建默认场景
+ * @param partial - 部分场景数据
+ * @returns 默认场景
+ */
 function createDefaultScene(partial?: Partial<DSLScene>): DSLScene {
   const now = Date.now();
 
@@ -101,9 +106,11 @@ export class DSLEngine {
     const newScene = this.reduce(this.scene, action);
 
     if (newScene !== this.scene) {
-      // 保存历史
-      this.saveToHistory();
+      // 更新场景
       this.scene = newScene;
+
+      // 保存新状态到历史
+      this.saveToHistory();
 
       // 通知所有监听器
       this.notifyListeners();
