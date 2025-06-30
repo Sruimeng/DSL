@@ -578,24 +578,31 @@ function resetCameraOperation(): void {
 
 // ========== 全局函数暴露 ==========
 
-// 暴露到全局作用域供HTML调用
-(window as any).undo = undoOperation;
-(window as any).redo = redoOperation;
-(window as any).clearHistory = clearHistoryOperation;
-(window as any).addCube = addCubeOperation;
-(window as any).addSphere = addSphereOperation;
-(window as any).addPlane = addPlaneOperation;
-(window as any).addCylinder = addCylinderOperation;
-(window as any).changeToStandard = changeToStandardOperation;
-(window as any).changeToWireframe = changeToWireframeOperation;
-(window as any).randomColors = randomColorsOperation;
-(window as any).applyGolden = applyGoldenOperation;
-(window as any).toggleAmbient = toggleAmbientOperation;
-(window as any).toggleDirectional = toggleDirectionalOperation;
-(window as any).addPointLight = addPointLightOperation;
-(window as any).changeBackground = changeBackgroundOperation;
-(window as any).clearScene = clearSceneOperation;
-(window as any).resetCamera = resetCameraOperation;
+// 立即暴露到全局作用域供HTML调用
+function exposeGlobalFunctions(): void {
+  (window as any).undo = undoOperation;
+  (window as any).redo = redoOperation;
+  (window as any).clearHistory = clearHistoryOperation;
+  (window as any).addCube = addCubeOperation;
+  (window as any).addSphere = addSphereOperation;
+  (window as any).addPlane = addPlaneOperation;
+  (window as any).addCylinder = addCylinderOperation;
+  (window as any).changeToStandard = changeToStandardOperation;
+  (window as any).changeToWireframe = changeToWireframeOperation;
+  (window as any).randomColors = randomColorsOperation;
+  (window as any).applyGolden = applyGoldenOperation;
+  (window as any).toggleAmbient = toggleAmbientOperation;
+  (window as any).toggleDirectional = toggleDirectionalOperation;
+  (window as any).addPointLight = addPointLightOperation;
+  (window as any).changeBackground = changeBackgroundOperation;
+  (window as any).clearScene = clearSceneOperation;
+  (window as any).resetCamera = resetCameraOperation;
+
+  console.log('🔧 全局函数已暴露到 window 对象');
+}
+
+// 立即执行函数暴露
+exposeGlobalFunctions();
 
 // 启动应用
 document.addEventListener('DOMContentLoaded', init);
