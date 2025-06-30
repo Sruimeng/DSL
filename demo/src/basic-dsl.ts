@@ -84,12 +84,32 @@ function setupKeyboardShortcuts(): void {
 function saveState(actionType: string, actionData: any): void {
   if (isUndoRedoOperation) return;
 
+  const currentScene = JSON.parse(JSON.stringify(engine.getScene()));
   const action: DSLAction = {
     type: actionType,
     payload: actionData,
     timestamp: new Date().toLocaleTimeString(),
-    previousState: JSON.parse(JSON.stringify(engine.getScene())),
+    previousState: currentScene,
   };
+
+  // 打印操作记录信息
+  console.log('💾 记录操作状态:', {
+    操作类型: actionType,
+    操作时间: action.timestamp,
+    场景状态快照: {
+      对象数量: currentScene.objects.length,
+      材质数量: currentScene.materials.length,
+      光源数量: currentScene.lights.length,
+      对象列表: currentScene.objects.map((obj) => ({
+        id: obj.id,
+        name: obj.name,
+        type: obj.type,
+      })),
+    },
+    操作载荷: actionData,
+    撤销栈长度: undoStack.length + 1,
+    重做栈长度: redoStack.length,
+  });
 
   undoStack.push(action);
   redoStack.length = 0; // 清空重做栈
@@ -100,7 +120,7 @@ function saveState(actionType: string, actionData: any): void {
   }
 
   updateUndoRedoButtons(undoStack, redoStack);
-  log(`🔄 操作已记录: ${actionType}`);
+  log(`🔄 操作已记录: ${actionType} (${action.timestamp})`);
 }
 
 // 撤销操作
@@ -113,9 +133,38 @@ function undoOperation(): void {
   isUndoRedoOperation = true;
 
   const action = undoStack.pop()!;
+  const currentState = JSON.parse(JSON.stringify(engine.getScene()));
+
   redoStack.push({
     ...action,
-    currentState: JSON.parse(JSON.stringify(engine.getScene())),
+    currentState: currentState,
+  });
+
+  // 打印详细的撤销信息
+  console.log('🔄 执行撤销操作:', {
+    操作类型: action.type,
+    操作时间: action.timestamp,
+    当前场景状态: {
+      对象数量: currentState.objects.length,
+      材质数量: currentState.materials.length,
+      光源数量: currentState.lights.length,
+      对象列表: currentState.objects.map((obj) => ({
+        id: obj.id,
+        name: obj.name,
+        type: obj.type,
+      })),
+    },
+    恢复到场景状态: {
+      对象数量: action.previousState.objects.length,
+      材质数量: action.previousState.materials.length,
+      光源数量: action.previousState.lights.length,
+      对象列表: action.previousState.objects.map((obj) => ({
+        id: obj.id,
+        name: obj.name,
+        type: obj.type,
+      })),
+    },
+    操作载荷: action.payload,
   });
 
   // 恢复到上一个状态
@@ -123,7 +172,7 @@ function undoOperation(): void {
 
   isUndoRedoOperation = false;
   updateUndoRedoButtons(undoStack, redoStack);
-  log(`↶ 撤销操作: ${action.type}`);
+  log(`↶ 撤销操作: ${action.type} (时间: ${action.timestamp})`);
 }
 
 // 重做操作
@@ -136,14 +185,43 @@ function redoOperation(): void {
   isUndoRedoOperation = true;
 
   const action = redoStack.pop()!;
+  const currentState = JSON.parse(JSON.stringify(engine.getScene()));
+
   undoStack.push(action);
+
+  // 打印详细的重做信息
+  console.log('🔄 执行重做操作:', {
+    操作类型: action.type,
+    操作时间: action.timestamp,
+    当前场景状态: {
+      对象数量: currentState.objects.length,
+      材质数量: currentState.materials.length,
+      光源数量: currentState.lights.length,
+      对象列表: currentState.objects.map((obj) => ({
+        id: obj.id,
+        name: obj.name,
+        type: obj.type,
+      })),
+    },
+    恢复到场景状态: {
+      对象数量: action.currentState.objects.length,
+      材质数量: action.currentState.materials.length,
+      光源数量: action.currentState.lights.length,
+      对象列表: action.currentState.objects.map((obj) => ({
+        id: obj.id,
+        name: obj.name,
+        type: obj.type,
+      })),
+    },
+    操作载荷: action.payload,
+  });
 
   // 恢复到重做状态
   restoreSceneState(action.currentState);
 
   isUndoRedoOperation = false;
   updateUndoRedoButtons(undoStack, redoStack);
-  log(`↷ 重做操作: ${action.type}`);
+  log(`↷ 重做操作: ${action.type} (时间: ${action.timestamp})`);
 }
 
 // 清空历史记录
@@ -200,6 +278,8 @@ function init(): void {
     log('🎨 渲染器创建成功');
     log('🎮 轨道控制器已启用');
     log('⌨️ 快捷键: Ctrl+Z(撤销) / Ctrl+Y(重做)');
+    log('📊 场景统计信息将实时更新');
+    log('🔍 打开浏览器控制台查看详细的undo/redo信息');
   } catch (error) {
     console.error('初始化失败:', error);
     log('❌ 初始化失败: ' + error);

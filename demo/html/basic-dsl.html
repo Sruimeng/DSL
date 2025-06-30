@@ -299,23 +299,26 @@
             color: #374151;
         }
 
-        /* 日志区域 */
+                /* 日志区域 */
         .logs-section {
-            flex: 1;
-            padding: 16px 20px;
-            min-height: 0;
+          flex: 1;
+          padding: 16px 20px;
+          min-height: 200px;
+          display: flex;
+          flex-direction: column;
         }
 
         .logs-container {
-            height: 100%;
-            background: rgba(17, 24, 39, 0.95);
-            border-radius: 6px;
-            padding: 12px;
-            overflow-y: auto;
-            font-family: 'Courier New', monospace;
-            font-size: 0.8rem;
-            color: #e5e7eb;
-            line-height: 1.4;
+          flex: 1;
+          min-height: 150px;
+          background: rgba(17, 24, 39, 0.95);
+          border-radius: 6px;
+          padding: 12px;
+          overflow-y: auto;
+          font-family: 'Courier New', monospace;
+          font-size: 0.8rem;
+          color: #e5e7eb;
+          line-height: 1.4;
         }
 
         .logs-container div {
