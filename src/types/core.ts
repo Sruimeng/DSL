@@ -151,10 +151,10 @@ export interface WorkspaceData {
 }
 
 // 完整场景配置
-export interface TripoScene {
+export interface DSLScene {
   id: string;
   name: string;
-  version?: '2.1';
+  version?: '1.0';
   objects: SceneObject[];
   materials: Material[];
   lights: Light[];
@@ -180,35 +180,110 @@ export interface Operation {
   operations?: Operation[];
 }
 
+export enum ActionTypes {
+  /**
+   * 添加对象
+   */
+  ADD_OBJECT = 'ADD_OBJECT',
+  /**
+   * 更新对象
+   */
+  UPDATE_OBJECT = 'UPDATE_OBJECT',
+  /**
+   * 删除对象
+   */
+  REMOVE_OBJECT = 'REMOVE_OBJECT',
+  /**
+   * 复制对象
+   */
+  DUPLICATE_OBJECT = 'DUPLICATE_OBJECT',
+  /**
+   * 移动对象 - 改变对象的父子关系和层级位置
+   */
+  MOVE_OBJECT = 'MOVE_OBJECT',
+  /**
+   * 重新排序子对象 - 调整同级对象的顺序
+   */
+  REORDER_CHILDREN = 'REORDER_CHILDREN',
+  /**
+   * 添加材质 - 创建新的材质定义
+   */
+  ADD_MATERIAL = 'ADD_MATERIAL',
+  /**
+   * 更新材质 - 修改现有材质的属性
+   */
+  UPDATE_MATERIAL = 'UPDATE_MATERIAL',
+  /**
+   * 应用材质 - 将材质分配给指定对象
+   */
+  APPLY_MATERIAL = 'APPLY_MATERIAL',
+  /**
+   * 选择对象 - 设置场景中的选中状态
+   */
+  SELECT = 'SELECT',
+  /**
+   * 清除选择 - 取消所有对象的选中状态
+   */
+  CLEAR_SELECTION = 'CLEAR_SELECTION',
+  /**
+   * 更新相机 - 修改相机位置、角度等参数
+   */
+  UPDATE_CAMERA = 'UPDATE_CAMERA',
+  /**
+   * 添加光源 - 创建新的光源对象
+   */
+  ADD_LIGHT = 'ADD_LIGHT',
+  /**
+   * 更新光源 - 修改现有光源的属性
+   */
+  UPDATE_LIGHT = 'UPDATE_LIGHT',
+  /**
+   * 删除光源 - 移除指定的光源对象
+   */
+  REMOVE_LIGHT = 'REMOVE_LIGHT',
+  /**
+   * 重置场景 - 清空场景并恢复到初始状态
+   */
+  RESET_SCENE = 'RESET_SCENE',
+  /**
+   * 加载场景 - 从外部数据加载完整场景配置
+   */
+  LOAD_SCENE = 'LOAD_SCENE',
+}
+
 // Action类型 - DSL引擎的状态变更操作
-export type TripoAction =
+export type DSLAction =
   // 对象操作
-  | { type: 'ADD_OBJECT'; payload: Partial<SceneObject> }
-  | { type: 'UPDATE_OBJECT'; payload: { id: string; changes: Partial<SceneObject> } }
-  | { type: 'REMOVE_OBJECT'; payload: { id: string } }
-  | { type: 'DUPLICATE_OBJECT'; payload: { id: string } }
+  | { type: ActionTypes.ADD_OBJECT; payload: Partial<SceneObject> }
+  | { type: ActionTypes.UPDATE_OBJECT; payload: { id: string; changes: Partial<SceneObject> } }
+  | { type: ActionTypes.REMOVE_OBJECT; payload: { id: string } }
+  | { type: ActionTypes.DUPLICATE_OBJECT; payload: { id: string } }
+
+  // 节点树操作
+  | { type: ActionTypes.MOVE_OBJECT; payload: { id: string; parentId?: string; index?: number } }
+  | { type: ActionTypes.REORDER_CHILDREN; payload: { parentId: string; childIds: string[] } }
 
   // 材质操作
-  | { type: 'ADD_MATERIAL'; payload: Partial<MaterialInline> }
-  | { type: 'UPDATE_MATERIAL'; payload: { id: string; changes: Partial<MaterialInline> } }
-  | { type: 'APPLY_MATERIAL'; payload: { objectIds: string[]; materialId: string } }
+  | { type: ActionTypes.ADD_MATERIAL; payload: Partial<MaterialInline> }
+  | { type: ActionTypes.UPDATE_MATERIAL; payload: { id: string; changes: Partial<MaterialInline> } }
+  | { type: ActionTypes.APPLY_MATERIAL; payload: { objectIds: string[]; materialId: string } }
 
   // 选择操作
-  | { type: 'SELECT'; payload: { ids: string[]; mode: 'set' | 'add' | 'toggle' } }
-  | { type: 'CLEAR_SELECTION' }
+  | { type: ActionTypes.SELECT; payload: { ids: string[]; mode: 'set' | 'add' | 'toggle' } }
+  | { type: ActionTypes.CLEAR_SELECTION }
 
   // 环境操作
-  | { type: 'UPDATE_CAMERA'; payload: Partial<Camera> }
-  | { type: 'ADD_LIGHT'; payload: Partial<Light> }
-  | { type: 'UPDATE_LIGHT'; payload: { id: string; changes: Partial<Light> } }
-  | { type: 'REMOVE_LIGHT'; payload: { id: string } }
+  | { type: ActionTypes.UPDATE_CAMERA; payload: Partial<Camera> }
+  | { type: ActionTypes.ADD_LIGHT; payload: Partial<Light> }
+  | { type: ActionTypes.UPDATE_LIGHT; payload: { id: string; changes: Partial<Light> } }
+  | { type: ActionTypes.REMOVE_LIGHT; payload: { id: string } }
 
   // 场景操作
-  | { type: 'RESET_SCENE' }
-  | { type: 'LOAD_SCENE'; payload: TripoScene };
+  | { type: ActionTypes.RESET_SCENE }
+  | { type: ActionTypes.LOAD_SCENE; payload: DSLScene };
 
 // Hook返回类型
-export interface TripoSceneAPI {
+export interface DSLSceneAPI {
   objects: SceneObject[];
   add: (object: Partial<SceneObject>) => string;
   update: (id: string, changes: Partial<SceneObject>) => void;
@@ -216,9 +291,15 @@ export interface TripoSceneAPI {
   find: (predicate: (obj: SceneObject) => boolean) => SceneObject[];
   get: (id: string) => SceneObject | null;
   batch: (operations: Operation[]) => void;
+
+  // 节点树操作
+  moveObject: (id: string, parentId?: string, index?: number) => void;
+  reorderChildren: (parentId: string, childIds: string[]) => void;
+  getChildren: (parentId: string) => SceneObject[];
+  getParent: (childId: string) => SceneObject | null;
 }
 
-export interface TripoSelectionAPI {
+export interface DSLSelectionAPI {
   selected: string[];
   select: (ids: string[]) => void;
   add: (ids: string[]) => void;
@@ -227,7 +308,7 @@ export interface TripoSelectionAPI {
   toggle: (id: string) => void;
 }
 
-export interface TripoHistoryAPI {
+export interface DSLHistoryAPI {
   canUndo: boolean;
   canRedo: boolean;
   undo: () => void;
@@ -235,33 +316,33 @@ export interface TripoHistoryAPI {
   clear: () => void;
 }
 
-export interface TripoWorkspaceAPI {
+export interface DSLWorkspaceAPI {
   current: WorkspaceType;
   switch: (type: WorkspaceType) => void;
   data: WorkspaceData;
   update: (data: Partial<WorkspaceData>) => void;
 }
 
-export interface TripoMaterialsAPI {
+export interface DSLMaterialsAPI {
   list: Material[];
   create: (material: Partial<MaterialInline>) => string;
   update: (id: string, changes: Partial<MaterialInline>) => void;
   apply: (objectIds: string[], materialId: string) => void;
 }
 
-export interface TripoIOAPI {
-  export: () => TripoScene;
-  import: (scene: TripoScene) => void;
+export interface DSLIOAPI {
+  export: () => DSLScene;
+  import: (scene: DSLScene) => void;
   reset: () => void;
 }
 
-export interface TripoAPI {
-  scene: TripoSceneAPI;
-  selection: TripoSelectionAPI;
-  history: TripoHistoryAPI;
-  workspace: TripoWorkspaceAPI;
-  materials: TripoMaterialsAPI;
-  io: TripoIOAPI;
+export interface DSLAPI {
+  scene: DSLSceneAPI;
+  selection: DSLSelectionAPI;
+  history: DSLHistoryAPI;
+  workspace: DSLWorkspaceAPI;
+  materials: DSLMaterialsAPI;
+  io: DSLIOAPI;
 }
 
 // 生成工作区扩展
@@ -273,7 +354,7 @@ export interface GeneratedModel {
   metadata?: Record<string, any>;
 }
 
-export interface TripoGenerateAPI extends TripoAPI {
+export interface DSLGenerateAPI extends DSLAPI {
   generate: {
     prompt: string;
     setPrompt: (prompt: string) => void;
@@ -286,7 +367,7 @@ export interface TripoGenerateAPI extends TripoAPI {
 }
 
 // 材质工作区扩展
-export interface TripoTextureAPI extends TripoAPI {
+export interface TripoTextureAPI extends DSLAPI {
   texture: {
     preview: MaterialInline | null;
     setPreview: (material: MaterialInline) => void;
@@ -301,8 +382,8 @@ export interface Bone {
   id: string;
   name: string;
   parent?: string;
-  position: [number, number, number];
-  rotation: [number, number, number];
+  position: Vector3;
+  rotation: Vector3;
   children?: string[];
 }
 
@@ -311,7 +392,7 @@ export interface BoneWeight {
   weight: number;
 }
 
-export interface TripoRiggingAPI extends TripoAPI {
+export interface DSLRiggingAPI extends DSLAPI {
   rigging: {
     bones: Bone[];
     addBone: (bone: Partial<Bone>) => void;

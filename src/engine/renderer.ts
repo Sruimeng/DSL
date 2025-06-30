@@ -2,19 +2,19 @@
 import * as THREE from 'three';
 import {
   type Camera,
+  type DSLScene,
   type Light,
   type Material,
   type MaterialInline,
   type SceneObject,
-  type TripoScene,
 } from '../types';
-import type { TripoEngine } from './engine';
+import type { DSLEngine } from './engine';
 
-export class TripoRenderer {
+export class DSLRenderer {
   private scene!: THREE.Scene;
   private camera!: THREE.Camera;
   private renderer!: THREE.WebGLRenderer;
-  private engine: TripoEngine;
+  private engine: DSLEngine;
 
   // 对象映射表 - DSL对象ID到ThreeJS对象
   private objectMap = new Map<string, THREE.Object3D>();
@@ -25,7 +25,7 @@ export class TripoRenderer {
   private controls?: any;
   private animationId?: number;
 
-  constructor(canvas: HTMLCanvasElement, engine: TripoEngine) {
+  constructor(canvas: HTMLCanvasElement, engine: DSLEngine) {
     this.engine = engine;
     this.setupThreeJS(canvas);
     this.setupSceneSync();
@@ -58,7 +58,7 @@ export class TripoRenderer {
 
   private setupSceneSync() {
     // 监听DSL状态变化
-    this.engine.subscribe((dslScene: TripoScene) => {
+    this.engine.subscribe((dslScene: DSLScene) => {
       this.syncScene(dslScene);
     });
 
@@ -67,7 +67,7 @@ export class TripoRenderer {
   }
 
   // 同步DSL场景到ThreeJS场景
-  private syncScene(dslScene: TripoScene) {
+  private syncScene(dslScene: DSLScene) {
     // 同步材质（优先级最高，对象可能依赖材质）
     this.syncMaterials(dslScene.materials);
 
@@ -563,7 +563,7 @@ export class TripoRenderer {
   }
 
   // 同步环境
-  private syncEnvironment(environment: TripoScene['environment']) {
+  private syncEnvironment(environment: DSLScene['environment']) {
     if (environment?.background?.color) {
       this.scene.background = new THREE.Color(environment.background.color);
     }

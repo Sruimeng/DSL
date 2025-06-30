@@ -2,15 +2,16 @@
 import { Vector3 } from 'three';
 import { generateUUID } from 'three/src/math/MathUtils.js';
 import {
+  ActionTypes,
+  type DSLAction,
+  type DSLScene,
   type Light,
   type Material,
   type MaterialInline,
   type SceneObject,
-  type TripoAction,
-  type TripoScene,
 } from '../types';
 
-function createDefaultScene(partial?: Partial<TripoScene>): TripoScene {
+function createDefaultScene(partial?: Partial<DSLScene>): DSLScene {
   const now = Date.now();
 
   return {
@@ -69,20 +70,33 @@ function createDefaultScene(partial?: Partial<TripoScene>): TripoScene {
 }
 
 // DSL引擎核心类
-export class TripoEngine {
-  private scene: TripoScene;
-  private listeners: Set<(scene: TripoScene) => void> = new Set();
-  private history: TripoScene[] = [];
+export class DSLEngine {
+  private scene: DSLScene;
+  private listeners: Set<(scene: DSLScene) => void> = new Set();
+  private history: DSLScene[] = [];
   private historyIndex = -1;
   private maxHistorySize = 50;
 
-  constructor(initialScene?: Partial<TripoScene>) {
+  constructor(initialScene?: Partial<DSLScene>) {
     this.scene = createDefaultScene(initialScene);
     this.saveToHistory();
   }
 
+  // 辅助方法：检查是否是子孙节点（避免循环引用）
+  private isDescendant(scene: DSLScene, ancestorId: string, nodeId: string): boolean {
+    const node = scene.objects.find((obj) => obj.id === nodeId);
+    if (!node || !node.children) return false;
+
+    for (const childId of node.children) {
+      if (childId === ancestorId) return true;
+      if (this.isDescendant(scene, ancestorId, childId)) return true;
+    }
+
+    return false;
+  }
+
   // 执行Action - 唯一修改状态的方式
-  dispatch(action: TripoAction): void {
+  dispatch(action: DSLAction): void {
     const newScene = this.reduce(this.scene, action);
 
     if (newScene !== this.scene) {
@@ -96,18 +110,18 @@ export class TripoEngine {
   }
 
   // 获取当前状态
-  getScene(): TripoScene {
+  getScene(): DSLScene {
     return this.scene;
   }
 
   // 监听状态变化
-  subscribe(listener: (scene: TripoScene) => void): () => void {
+  subscribe(listener: (scene: DSLScene) => void): () => void {
     this.listeners.add(listener);
     return () => this.listeners.delete(listener);
   }
 
   // Action处理器
-  private reduce(scene: TripoScene, action: TripoAction): TripoScene {
+  private reduce(scene: DSLScene, action: DSLAction): DSLScene {
     switch (action.type) {
       case 'ADD_OBJECT': {
         const objectId = generateUUID();
@@ -185,6 +199,74 @@ export class TripoEngine {
         return {
           ...scene,
           objects: [...scene.objects, duplicated],
+          metadata: { ...scene.metadata, modified: Date.now() },
+        };
+      }
+
+      case 'MOVE_OBJECT': {
+        const { id, parentId, index } = action.payload;
+        const objects = [...scene.objects];
+        const targetObj = objects.find((obj) => obj.id === id);
+
+        if (!targetObj) return scene;
+
+        // 防止将对象移动到自己的子节点中（避免循环引用）
+        if (parentId && this.isDescendant(scene, parentId, id)) {
+          return scene;
+        }
+
+        // 移除目标对象从旧的父节点的children中
+        if (targetObj.parent) {
+          const oldParent = objects.find((obj) => obj.id === targetObj.parent);
+          if (oldParent && oldParent.children) {
+            oldParent.children = oldParent.children.filter((childId) => childId !== id);
+          }
+        }
+
+        // 更新目标对象的parent
+        targetObj.parent = parentId;
+
+        // 将目标对象添加到新的父节点的children中
+        if (parentId) {
+          const newParent = objects.find((obj) => obj.id === parentId);
+          if (newParent) {
+            if (!newParent.children) {
+              newParent.children = [];
+            }
+
+            // 如果指定了index，插入到指定位置，否则添加到末尾
+            if (index !== undefined && index >= 0 && index <= newParent.children.length) {
+              newParent.children.splice(index, 0, id);
+            } else {
+              newParent.children.push(id);
+            }
+          }
+        }
+
+        return {
+          ...scene,
+          objects,
+          metadata: { ...scene.metadata, modified: Date.now() },
+        };
+      }
+
+      case 'REORDER_CHILDREN': {
+        const { parentId, childIds } = action.payload;
+        const objects = [...scene.objects];
+        const parent = objects.find((obj) => obj.id === parentId);
+
+        if (!parent) return scene;
+
+        // 验证所有childIds都是当前parent的子节点
+        const currentChildren = parent.children || [];
+        const validChildIds = childIds.filter((id) => currentChildren.includes(id));
+
+        // 更新parent的children顺序
+        parent.children = validChildIds;
+
+        return {
+          ...scene,
+          objects,
           metadata: { ...scene.metadata, modified: Date.now() },
         };
       }
@@ -401,34 +483,34 @@ export class TripoEngine {
   // 公共方法 - 便捷操作
   addObject(object: Partial<SceneObject>): string {
     const id = generateUUID();
-    this.dispatch({ type: 'ADD_OBJECT', payload: { ...object, id } });
+    this.dispatch({ type: ActionTypes.ADD_OBJECT, payload: { ...object, id } });
     return id;
   }
 
   updateObject(id: string, changes: Partial<SceneObject>): void {
-    this.dispatch({ type: 'UPDATE_OBJECT', payload: { id, changes } });
+    this.dispatch({ type: ActionTypes.UPDATE_OBJECT, payload: { id, changes } });
   }
 
   removeObject(id: string): void {
-    this.dispatch({ type: 'REMOVE_OBJECT', payload: { id } });
+    this.dispatch({ type: ActionTypes.REMOVE_OBJECT, payload: { id } });
   }
 
   selectObjects(ids: string[], mode: 'set' | 'add' | 'toggle' = 'set'): void {
-    this.dispatch({ type: 'SELECT', payload: { ids, mode } });
+    this.dispatch({ type: ActionTypes.SELECT, payload: { ids, mode } });
   }
 
   clearSelection(): void {
-    this.dispatch({ type: 'CLEAR_SELECTION' });
+    this.dispatch({ type: ActionTypes.CLEAR_SELECTION });
   }
 
   addMaterial(material: Partial<MaterialInline>): string {
     const id = generateUUID();
-    this.dispatch({ type: 'ADD_MATERIAL', payload: { ...material, id } });
+    this.dispatch({ type: ActionTypes.ADD_MATERIAL, payload: { ...material, id } });
     return id;
   }
 
   applyMaterial(objectIds: string[], materialId: string): void {
-    this.dispatch({ type: 'APPLY_MATERIAL', payload: { objectIds, materialId } });
+    this.dispatch({ type: ActionTypes.APPLY_MATERIAL, payload: { objectIds, materialId } });
   }
 
   // 查询方法
@@ -447,11 +529,11 @@ export class TripoEngine {
   }
 
   // 导入导出
-  exportScene(): TripoScene {
+  exportScene(): DSLScene {
     return JSON.parse(JSON.stringify(this.scene));
   }
 
-  importScene(scene: TripoScene): void {
-    this.dispatch({ type: 'LOAD_SCENE', payload: scene });
+  importScene(scene: DSLScene): void {
+    this.dispatch({ type: ActionTypes.LOAD_SCENE, payload: scene });
   }
 }

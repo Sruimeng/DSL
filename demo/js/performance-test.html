@@ -1,0 +1,347 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>性能测试 - TripoScript 2.1</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        background: linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%);
+        color: #333;
+      }
+
+      .container {
+        display: flex;
+        height: 100vh;
+      }
+
+      .sidebar {
+        width: 340px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 20px;
+        box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        overflow-y: auto;
+      }
+
+      .viewport {
+        flex: 1;
+        position: relative;
+      }
+
+      #canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      h1 {
+        margin: 0 0 20px 0;
+        color: #2c3e50;
+        font-size: 24px;
+      }
+
+      .section {
+        margin-bottom: 20px;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 8px;
+        border-left: 4px solid #6c5ce7;
+      }
+
+      .section h3 {
+        margin: 0 0 15px 0;
+        color: #2c3e50;
+        font-size: 16px;
+      }
+
+      button {
+        width: 100%;
+        padding: 8px;
+        margin: 3px 0;
+        border: none;
+        border-radius: 4px;
+        background: #6c5ce7;
+        color: white;
+        cursor: pointer;
+        font-size: 13px;
+        transition: all 0.3s ease;
+      }
+
+      button:hover {
+        background: #5f3dc4;
+        transform: translateY(-1px);
+      }
+
+      button:disabled {
+        background: #bdc3c7;
+        cursor: not-allowed;
+        transform: none;
+      }
+
+      .test-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 15px;
+      }
+
+      .test-btn {
+        padding: 10px;
+        font-size: 11px;
+        text-align: center;
+        margin: 0;
+      }
+
+      .control-group {
+        margin-bottom: 12px;
+      }
+
+      .control-group label {
+        display: block;
+        font-size: 12px;
+        margin-bottom: 4px;
+        font-weight: 500;
+      }
+
+      .control-group input[type='range'] {
+        width: 100%;
+        margin-bottom: 5px;
+      }
+
+      .control-group input[type='number'] {
+        width: 100%;
+        padding: 4px;
+        border: 1px solid #ddd;
+        border-radius: 3px;
+        font-size: 12px;
+      }
+
+      .metrics {
+        background: #2c3e50;
+        color: white;
+        padding: 15px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 11px;
+        line-height: 1.6;
+      }
+
+      .metric-row {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 5px;
+      }
+
+      .metric-value {
+        color: #2ecc71;
+        font-weight: bold;
+      }
+
+      .metric-value.warning {
+        color: #f39c12;
+      }
+
+      .metric-value.error {
+        color: #e74c3c;
+      }
+
+      .back-link {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(108, 92, 231, 0.9);
+        color: white;
+        padding: 10px 20px;
+        text-decoration: none;
+        border-radius: 6px;
+        z-index: 1000;
+      }
+
+      .performance-chart {
+        height: 80px;
+        background: #34495e;
+        border-radius: 4px;
+        position: relative;
+        overflow: hidden;
+        margin-top: 10px;
+      }
+
+      .chart-line {
+        position: absolute;
+        bottom: 0;
+        width: 2px;
+        background: #2ecc71;
+        transition: height 0.1s ease;
+      }
+
+      .optimization-controls {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 5px;
+        margin-bottom: 10px;
+      }
+
+      .opt-btn {
+        padding: 6px;
+        font-size: 11px;
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+
+    <div class="container">
+      <div class="sidebar">
+        <h1>性能测试</h1>
+
+        <div class="section">
+          <h3>🚀 压力测试</h3>
+          <div class="test-grid">
+            <button class="test-btn" onclick="test100Objects()">100个对象</button>
+            <button class="test-btn" onclick="test500Objects()">500个对象</button>
+            <button class="test-btn" onclick="test1000Objects()">1000个对象</button>
+            <button class="test-btn" onclick="test5000Objects()">5000个对象</button>
+            <button class="test-btn" onclick="testComplexScene()">复杂场景</button>
+            <button class="test-btn" onclick="testAnimatedObjects()">动画对象</button>
+          </div>
+
+          <div class="control-group">
+            <label>批量数量: <span id="batchSizeValue">100</span></label>
+            <input
+              type="range"
+              id="batchSize"
+              min="10"
+              max="1000"
+              step="10"
+              value="100"
+              oninput="updateBatchSize()"
+            />
+          </div>
+
+          <button onclick="addBatchObjects()" id="addBatchBtn">批量添加对象</button>
+          <button onclick="clearAllObjects()">清空所有对象</button>
+        </div>
+
+        <div class="section">
+          <h3>⚡ 性能优化</h3>
+          <div class="optimization-controls">
+            <button class="opt-btn" onclick="enableInstancing()">实例化渲染</button>
+            <button class="opt-btn" onclick="enableCulling()">视锥体剔除</button>
+            <button class="opt-btn" onclick="enableLOD()">细节层次</button>
+            <button class="opt-btn" onclick="optimizeMaterials()">材质合批</button>
+          </div>
+
+          <div class="control-group">
+            <label>更新频率: <span id="updateRateValue">60</span> FPS</label>
+            <input
+              type="range"
+              id="updateRate"
+              min="10"
+              max="120"
+              step="5"
+              value="60"
+              oninput="updateFrameRate()"
+            />
+          </div>
+
+          <button onclick="freezeUpdates()" id="freezeBtn">冻结更新</button>
+          <button onclick="forceGC()">强制垃圾回收</button>
+        </div>
+
+        <div class="section">
+          <h3>🔬 自动化测试</h3>
+          <div class="control-group">
+            <label>测试时长: <span id="testDurationValue">10</span> 秒</label>
+            <input
+              type="range"
+              id="testDuration"
+              min="5"
+              max="60"
+              step="5"
+              value="10"
+              oninput="updateTestDuration()"
+            />
+          </div>
+
+          <button onclick="runBenchmark()" id="benchmarkBtn">运行基准测试</button>
+          <button onclick="runStressTest()" id="stressTestBtn">运行压力测试</button>
+          <button onclick="runMemoryTest()">内存泄漏测试</button>
+          <button onclick="stopAllTests()">停止所有测试</button>
+        </div>
+
+        <div class="section">
+          <h3>📊 性能指标</h3>
+          <div class="metrics" id="metrics">
+            <div class="metric-row">
+              <span>帧率 (FPS):</span>
+              <span class="metric-value" id="fps">60</span>
+            </div>
+            <div class="metric-row">
+              <span>渲染时间:</span>
+              <span class="metric-value" id="renderTime">16.7ms</span>
+            </div>
+            <div class="metric-row">
+              <span>对象数量:</span>
+              <span class="metric-value" id="objectCount">0</span>
+            </div>
+            <div class="metric-row">
+              <span>材质数量:</span>
+              <span class="metric-value" id="materialCount">0</span>
+            </div>
+            <div class="metric-row">
+              <span>内存使用:</span>
+              <span class="metric-value" id="memoryUsage">0 MB</span>
+            </div>
+            <div class="metric-row">
+              <span>绘制调用:</span>
+              <span class="metric-value" id="drawCalls">0</span>
+            </div>
+            <div class="metric-row">
+              <span>三角形数:</span>
+              <span class="metric-value" id="triangles">0</span>
+            </div>
+          </div>
+
+          <div class="performance-chart" id="performanceChart">
+            <!-- 性能图表将在这里显示 -->
+          </div>
+        </div>
+
+        <div class="section">
+          <h3>⚙️ 测试配置</h3>
+          <div class="control-group">
+            <label>几何复杂度:</label>
+            <select id="geometryComplexity" onchange="updateGeometryComplexity()">
+              <option value="low">低 (Box)</option>
+              <option value="medium" selected>中 (Sphere 16)</option>
+              <option value="high">高 (Sphere 32)</option>
+              <option value="ultra">超高 (Sphere 64)</option>
+            </select>
+          </div>
+
+          <div class="control-group">
+            <label>阴影质量:</label>
+            <select id="shadowQuality" onchange="updateShadowQuality()">
+              <option value="off">关闭</option>
+              <option value="low">低</option>
+              <option value="medium" selected>中</option>
+              <option value="high">高</option>
+            </select>
+          </div>
+
+          <button onclick="exportResults()">导出测试结果</button>
+        </div>
+      </div>
+
+      <div class="viewport">
+        <canvas id="canvas"></canvas>
+      </div>
+    </div>
+    <script type="module" src="../src/performance-test.ts"></script>
+  </body>
+</html>

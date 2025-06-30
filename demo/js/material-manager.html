@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>材质管理 - TripoScript 2.1</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #6c5ce7 0%, #a29bfe 100%);
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        h1 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            border-left: 4px solid #9b59b6;
+        }
+
+        .section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px;
+            margin: 3px 0;
+            border: none;
+            border-radius: 4px;
+            background: #9b59b6;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #8e44ad;
+            transform: translateY(-1px);
+        }
+
+        .material-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .material-card {
+            padding: 8px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: white;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .material-card:hover {
+            border-color: #9b59b6;
+            background: #f8f9fa;
+        }
+
+        .material-card.selected {
+            border-color: #9b59b6;
+            background: #9b59b6;
+            color: white;
+        }
+
+        .color-preview {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            margin: 5px auto;
+            border: 2px solid #ddd;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .control-group input[type="color"] {
+            width: 100%;
+            height: 30px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .control-group input[type="number"] {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .preset-materials {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .preset-btn {
+            padding: 6px;
+            font-size: 11px;
+            margin: 0;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(155, 89, 182, 0.9);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            z-index: 1000;
+        }
+
+        .sphere-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .material-info {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+    
+    <div class="container">
+        <div class="sidebar">
+            <h1>材质管理</h1>
+            
+            <div class="section">
+                <h3>🎨 材质类型</h3>
+                <div class="material-grid">
+                    <div class="material-card" onclick="setMaterialType('standard')">
+                        标准材质<br><small>Standard</small>
+                    </div>
+                    <div class="material-card" onclick="setMaterialType('basic')">
+                        基础材质<br><small>Basic</small>
+                    </div>
+                    <div class="material-card" onclick="setMaterialType('wireframe')">
+                        线框材质<br><small>Wireframe</small>
+                    </div>
+                    <div class="material-card" onclick="setMaterialType('phong')">
+                        Phong材质<br><small>Phong</small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🔧 材质属性</h3>
+                
+                <div class="control-group">
+                    <label>颜色:</label>
+                    <input type="color" id="colorPicker" value="#ffffff" onchange="updateMaterial()">
+                </div>
+
+                <div class="control-group">
+                    <label>金属度: <span id="metalnessValue">0.0</span></label>
+                    <input type="range" id="metalness" min="0" max="1" step="0.01" value="0" oninput="updateSlider('metalness'); updateMaterial()">
+                </div>
+
+                <div class="control-group">
+                    <label>粗糙度: <span id="roughnessValue">0.5</span></label>
+                    <input type="range" id="roughness" min="0" max="1" step="0.01" value="0.5" oninput="updateSlider('roughness'); updateMaterial()">
+                </div>
+
+                <div class="control-group">
+                    <label>透明度: <span id="opacityValue">1.0</span></label>
+                    <input type="range" id="opacity" min="0" max="1" step="0.01" value="1" oninput="updateSlider('opacity'); updateMaterial()">
+                </div>
+
+                <div class="control-group">
+                    <label>反射强度: <span id="reflectivityValue">1.0</span></label>
+                    <input type="range" id="reflectivity" min="0" max="1" step="0.01" value="1" oninput="updateSlider('reflectivity'); updateMaterial()">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🎭 预设材质</h3>
+                <div class="preset-materials">
+                    <button class="preset-btn" onclick="applyPreset('gold')">黄金</button>
+                    <button class="preset-btn" onclick="applyPreset('silver')">银色</button>
+                    <button class="preset-btn" onclick="applyPreset('copper')">铜色</button>
+                    <button class="preset-btn" onclick="applyPreset('plastic')">塑料</button>
+                    <button class="preset-btn" onclick="applyPreset('rubber')">橡胶</button>
+                    <button class="preset-btn" onclick="applyPreset('glass')">玻璃</button>
+                    <button class="preset-btn" onclick="applyPreset('wood')">木材</button>
+                    <button class="preset-btn" onclick="applyPreset('marble')">大理石</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🌈 快速操作</h3>
+                <button onclick="randomizeMaterials()">随机材质</button>
+                <button onclick="resetMaterials()">重置材质</button>
+                <button onclick="createMaterialSpheres()">材质球展示</button>
+                <button onclick="toggleWireframe()">切换线框</button>
+            </div>
+
+            <div class="section">
+                <h3>📊 材质信息</h3>
+                <div class="material-info" id="materialInfo">
+                    当前材质: 标准材质<br>
+                    颜色: #ffffff<br>
+                    金属度: 0.0<br>
+                    粗糙度: 0.5
+                </div>
+            </div>
+        </div>
+
+        <div class="viewport">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <script type="module">
+        import { TripoEngine, TripoRenderer } from '../../src/index.js';
+        import { Vector3 } from 'three';
+        import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+        // 全局变量
+        let engine, renderer, controls;
+        let currentMaterialType = 'standard';
+        let testObjects = [];
+
+        // 预设材质配置
+        const materialPresets = {
+            gold: { color: '#ffd700', metalness: 1.0, roughness: 0.1 },
+            silver: { color: '#c0c0c0', metalness: 1.0, roughness: 0.05 },
+            copper: { color: '#b87333', metalness: 1.0, roughness: 0.2 },
+            plastic: { color: '#ff6b6b', metalness: 0.0, roughness: 0.8 },
+            rubber: { color: '#2d3436', metalness: 0.0, roughness: 0.9 },
+            glass: { color: '#74b9ff', metalness: 0.0, roughness: 0.0, opacity: 0.3 },
+            wood: { color: '#8b4513', metalness: 0.0, roughness: 0.8 },
+            marble: { color: '#f8f8ff', metalness: 0.1, roughness: 0.3 }
+        };
+
+        // 初始化系统
+        function init() {
+            const canvas = document.getElementById('canvas');
+            
+            // 创建DSL引擎
+            engine = new TripoEngine();
+            
+            // 创建渲染器
+            renderer = new TripoRenderer(canvas, engine);
+            
+            // 添加轨道控制器
+            controls = new OrbitControls(
+                renderer.getThreeCamera(), 
+                renderer.getThreeRenderer().domElement
+            );
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // 创建测试对象
+            createTestObjects();
+            
+            // 选择默认材质类型
+            setMaterialType('standard');
+            
+            // 启动渲染循环
+            animate();
+        }
+
+        // 渲染循环
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+        }
+
+        // 创建测试对象
+        function createTestObjects() {
+            // 创建一个立方体和一个球体用于材质测试
+            const cubeId = engine.addObject({
+                name: '测试立方体',
+                type: 'mesh',
+                geometry: {
+                    type: 'box',
+                    size: new Vector3(2, 2, 2)
+                },
+                transform: {
+                    position: new Vector3(-2, 0, 0)
+                },
+                material: { id: 'default' }
+            });
+
+            const sphereId = engine.addObject({
+                name: '测试球体',
+                type: 'mesh',
+                geometry: {
+                    type: 'sphere',
+                    radius: 1.5,
+                    radialSegments: 32,
+                    heightSegments: 16
+                },
+                transform: {
+                    position: new Vector3(2, 0, 0)
+                },
+                material: { id: 'default' }
+            });
+
+            testObjects = [cubeId, sphereId];
+        }
+
+        // 设置材质类型
+        window.setMaterialType = function(type) {
+            currentMaterialType = type;
+            
+            // 更新UI
+            document.querySelectorAll('.material-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.target.closest('.material-card').classList.add('selected');
+            
+            updateMaterial();
+        };
+
+        // 更新滑块显示值
+        window.updateSlider = function(property) {
+            const slider = document.getElementById(property);
+            const valueSpan = document.getElementById(property + 'Value');
+            valueSpan.textContent = parseFloat(slider.value).toFixed(2);
+        };
+
+        // 更新材质
+        window.updateMaterial = function() {
+            const color = document.getElementById('colorPicker').value;
+            const metalness = parseFloat(document.getElementById('metalness').value);
+            const roughness = parseFloat(document.getElementById('roughness').value);
+            const opacity = parseFloat(document.getElementById('opacity').value);
+            const reflectivity = parseFloat(document.getElementById('reflectivity').value);
+
+            // 创建新材质
+            const materialId = engine.addMaterial({
+                type: currentMaterialType,
+                color: color,
+                metalness: metalness,
+                roughness: roughness,
+                opacity: opacity,
+                reflectivity: reflectivity,
+                transparent: opacity < 1.0
+            });
+
+            // 应用到测试对象
+            engine.applyMaterial(testObjects, materialId);
+
+            // 更新材质信息显示
+            updateMaterialInfo(color, metalness, roughness, opacity);
+        };
+
+        // 应用预设材质
+        window.applyPreset = function(presetName) {
+            const preset = materialPresets[presetName];
+            if (!preset) return;
+
+            // 更新控制器
+            document.getElementById('colorPicker').value = preset.color;
+            document.getElementById('metalness').value = preset.metalness;
+            document.getElementById('roughness').value = preset.roughness;
+            document.getElementById('opacity').value = preset.opacity || 1.0;
+
+            // 更新显示值
+            updateSlider('metalness');
+            updateSlider('roughness');
+            updateSlider('opacity');
+
+            // 应用材质
+            updateMaterial();
+        };
+
+        // 随机化材质
+        window.randomizeMaterials = function() {
+            const colors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#ffeaa7', '#dda0dd', '#98d8c8'];
+            
+            testObjects.forEach(objId => {
+                const materialId = engine.addMaterial({
+                    type: currentMaterialType,
+                    color: colors[Math.floor(Math.random() * colors.length)],
+                    metalness: Math.random(),
+                    roughness: Math.random() * 0.8 + 0.1,
+                    opacity: Math.random() * 0.5 + 0.5,
+                    transparent: Math.random() > 0.7
+                });
+                engine.applyMaterial([objId], materialId);
+            });
+        };
+
+        // 重置材质
+        window.resetMaterials = function() {
+            engine.applyMaterial(testObjects, 'default');
+            
+            // 重置控制器
+            document.getElementById('colorPicker').value = '#ffffff';
+            document.getElementById('metalness').value = 0;
+            document.getElementById('roughness').value = 0.5;
+            document.getElementById('opacity').value = 1;
+            document.getElementById('reflectivity').value = 1;
+
+            updateSlider('metalness');
+            updateSlider('roughness');
+            updateSlider('opacity');
+            updateSlider('reflectivity');
+        };
+
+        // 创建材质球展示
+        window.createMaterialSpheres = function() {
+            // 清除现有对象
+            const scene = engine.getScene();
+            scene.objects.forEach(obj => {
+                if (!testObjects.includes(obj.id)) {
+                    engine.removeObject(obj.id);
+                }
+            });
+
+            // 创建不同材质的球体
+            const materials = Object.keys(materialPresets);
+            materials.forEach((presetName, index) => {
+                const preset = materialPresets[presetName];
+                const angle = (index / materials.length) * Math.PI * 2;
+                const radius = 6;
+                
+                const materialId = engine.addMaterial({
+                    type: 'standard',
+                    ...preset,
+                    transparent: preset.opacity !== undefined && preset.opacity < 1.0
+                });
+
+                const sphereId = engine.addObject({
+                    name: `${presetName}球体`,
+                    type: 'mesh',
+                    geometry: {
+                        type: 'sphere',
+                        radius: 1,
+                        radialSegments: 32,
+                        heightSegments: 16
+                    },
+                    transform: {
+                        position: new Vector3(
+                            Math.cos(angle) * radius,
+                            Math.sin(index) * 2,
+                            Math.sin(angle) * radius
+                        )
+                    },
+                    material: { id: materialId }
+                });
+            });
+        };
+
+        // 切换线框模式
+        window.toggleWireframe = function() {
+            const wireframeMaterial = engine.addMaterial({
+                type: 'wireframe',
+                color: '#00ff00'
+            });
+            
+            const scene = engine.getScene();
+            const allObjectIds = scene.objects.map(obj => obj.id);
+            
+            // 检查是否已经是线框模式
+            const currentMaterial = scene.materials.find(m => 
+                scene.objects.some(obj => obj.material?.id === m.id)
+            );
+            
+            if (currentMaterial && currentMaterial.type === 'wireframe') {
+                engine.applyMaterial(allObjectIds, 'default');
+            } else {
+                engine.applyMaterial(allObjectIds, wireframeMaterial);
+            }
+        };
+
+        // 更新材质信息显示
+        function updateMaterialInfo(color, metalness, roughness, opacity) {
+            const info = document.getElementById('materialInfo');
+            info.innerHTML = `
+                当前材质: ${currentMaterialType}<br>
+                颜色: ${color}<br>
+                金属度: ${metalness.toFixed(2)}<br>
+                粗糙度: ${roughness.toFixed(2)}<br>
+                透明度: ${opacity.toFixed(2)}
+            `;
+        }
+
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('canvas');
+            renderer.resize(canvas.clientWidth, canvas.clientHeight);
+        });
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html> 

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互控制 - TripoScript 2.1</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #fd79a8 0%, #fdcb6e 100%);
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 320px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            cursor: crosshair;
+        }
+
+        h1 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            border-left: 4px solid #fd79a8;
+        }
+
+        .section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px;
+            margin: 3px 0;
+            border: none;
+            border-radius: 4px;
+            background: #fd79a8;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #e84393;
+            transform: translateY(-1px);
+        }
+
+        button.active {
+            background: #e84393;
+            box-shadow: 0 0 10px rgba(232, 67, 147, 0.5);
+        }
+
+        .interaction-modes {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .mode-btn {
+            padding: 8px;
+            font-size: 12px;
+            text-align: center;
+            margin: 0;
+        }
+
+        .animation-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .anim-btn {
+            padding: 6px;
+            font-size: 11px;
+            margin: 0;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .control-group input[type="number"] {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(253, 121, 168, 0.9);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            z-index: 1000;
+        }
+
+        .status {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .physics-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .physics-btn {
+            padding: 6px;
+            font-size: 11px;
+            margin: 0;
+        }
+
+        .crosshair {
+            cursor: crosshair !important;
+        }
+
+        .move {
+            cursor: move !important;
+        }
+
+        .grab {
+            cursor: grab !important;
+        }
+
+        .grabbing {
+            cursor: grabbing !important;
+        }
+
+        .help-text {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-top: 5px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+    
+    <div class="container">
+        <div class="sidebar">
+            <h1>交互控制</h1>
+            
+            <div class="section">
+                <h3>🎮 交互模式</h3>
+                <div class="interaction-modes">
+                    <button class="mode-btn active" onclick="setInteractionMode('select')">选择模式</button>
+                    <button class="mode-btn" onclick="setInteractionMode('move')">移动模式</button>
+                    <button class="mode-btn" onclick="setInteractionMode('rotate')">旋转模式</button>
+                    <button class="mode-btn" onclick="setInteractionMode('scale')">缩放模式</button>
+                    <button class="mode-btn" onclick="setInteractionMode('paint')">绘制模式</button>
+                    <button class="mode-btn" onclick="setInteractionMode('delete')">删除模式</button>
+                </div>
+                <div class="help-text" id="modeHelp">
+                    点击对象选择，拖拽相机视角
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🎬 动画控制</h3>
+                <div class="animation-controls">
+                    <button class="anim-btn" onclick="startRotationAnimation()">旋转动画</button>
+                    <button class="anim-btn" onclick="startBounceAnimation()">弹跳动画</button>
+                    <button class="anim-btn" onclick="startWaveAnimation()">波浪动画</button>
+                    <button class="anim-btn" onclick="startOrbitAnimation()">轨道动画</button>
+                </div>
+                
+                <div class="control-group">
+                    <label>动画速度: <span id="animSpeedValue">1.0</span></label>
+                    <input type="range" id="animSpeed" min="0.1" max="3" step="0.1" value="1" oninput="updateAnimationSpeed()">
+                </div>
+
+                <button onclick="pauseAllAnimations()" id="pauseBtn">暂停所有动画</button>
+                <button onclick="stopAllAnimations()">停止所有动画</button>
+            </div>
+
+            <div class="section">
+                <h3>⚡ 物理效果</h3>
+                <div class="physics-controls">
+                    <button class="physics-btn" onclick="enableGravity()">启用重力</button>
+                    <button class="physics-btn" onclick="disableGravity()">关闭重力</button>
+                    <button class="physics-btn" onclick="addForceField()">力场效果</button>
+                    <button class="physics-btn" onclick="resetPositions()">重置位置</button>
+                </div>
+
+                <div class="control-group">
+                    <label>重力强度: <span id="gravityValue">9.8</span></label>
+                    <input type="range" id="gravity" min="0" max="20" step="0.1" value="9.8" oninput="updateGravity()">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🎨 实时绘制</h3>
+                <div class="control-group">
+                    <label>画笔大小: <span id="brushSizeValue">1.0</span></label>
+                    <input type="range" id="brushSize" min="0.5" max="3" step="0.1" value="1" oninput="updateBrushSize()">
+                </div>
+
+                <div class="control-group">
+                    <label>生成间隔: <span id="spawnRateValue">100</span>ms</label>
+                    <input type="range" id="spawnRate" min="50" max="500" step="10" value="100" oninput="updateSpawnRate()">
+                </div>
+
+                <button onclick="clearDrawnObjects()">清除绘制</button>
+            </div>
+
+            <div class="section">
+                <h3>⌨️ 键盘快捷键</h3>
+                <div style="font-size: 11px; line-height: 1.6;">
+                    <strong>Q</strong> - 选择模式<br>
+                    <strong>W</strong> - 移动模式<br>
+                    <strong>E</strong> - 旋转模式<br>
+                    <strong>R</strong> - 缩放模式<br>
+                    <strong>Space</strong> - 暂停动画<br>
+                    <strong>Delete</strong> - 删除选中<br>
+                    <strong>Ctrl+Z</strong> - 撤销<br>
+                    <strong>Ctrl+Y</strong> - 重做
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>📊 状态信息</h3>
+                <div class="status" id="status">
+                    交互模式: 选择<br>
+                    选中对象: 无<br>
+                    动画对象: 0<br>
+                    鼠标位置: (0, 0)
+                </div>
+            </div>
+        </div>
+
+        <div class="viewport">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <script type="module" src="../src/interactive.ts"></script>
+</body>
+</html> 

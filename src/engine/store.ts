@@ -1,28 +1,28 @@
 // DSL引擎核心状态管理 - 使用Zustand
 import { Vector3 } from 'three';
-import { v4 as uuidv4 } from 'uuid';
+import { generateUUID } from 'three/src/math/MathUtils.js';
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
 import type {
+  DSLScene,
   MaterialInline,
   Operation,
   SceneObject,
-  TripoScene,
   WorkspaceData,
   WorkspaceType,
 } from '../types/core';
 
 // 历史记录状态
 interface HistoryState {
-  past: TripoScene[];
-  present: TripoScene;
-  future: TripoScene[];
+  past: DSLScene[];
+  present: DSLScene;
+  future: DSLScene[];
 }
 
 // 主状态接口
 interface TripoStore {
   // 场景状态
-  scene: TripoScene;
+  scene: DSLScene;
 
   // 选择状态
   selectedIds: string[];
@@ -37,7 +37,7 @@ interface TripoStore {
   materialPresets: MaterialInline[];
 
   // 操作方法 - 场景管理
-  setScene: (scene: TripoScene) => void;
+  setScene: (scene: DSLScene) => void;
   addObject: (object: Partial<SceneObject>) => string;
   updateObject: (id: string, changes: Partial<SceneObject>) => void;
   removeObject: (id: string) => void;
@@ -54,7 +54,7 @@ interface TripoStore {
   undo: () => void;
   redo: () => void;
   clearHistory: () => void;
-  pushHistory: (scene: TripoScene) => void;
+  pushHistory: (scene: DSLScene) => void;
 
   // 操作方法 - 工作区管理
   switchWorkspace: (type: WorkspaceType) => void;
@@ -66,28 +66,34 @@ interface TripoStore {
   applyMaterial: (objectIds: string[], materialId: string) => void;
 
   // 操作方法 - 导入导出
-  exportScene: () => TripoScene;
-  importScene: (scene: TripoScene) => void;
+  exportScene: () => DSLScene;
+  importScene: (scene: DSLScene) => void;
   resetScene: () => void;
+
+  // 操作方法 - 节点树管理
+  moveObject: (id: string, parentId?: string, index?: number) => void;
+  reorderChildren: (parentId: string, childIds: string[]) => void;
+  getChildren: (parentId: string) => SceneObject[];
+  getParent: (childId: string) => SceneObject | null;
 }
 
 // 默认场景配置
-const createDefaultScene = (): TripoScene => ({
-  id: uuidv4(),
+const createDefaultScene = (): DSLScene => ({
+  id: generateUUID(),
   name: '新场景',
-  version: '2.1',
+  version: '1.0',
   objects: [],
   materials: [],
   lights: [
     {
-      id: uuidv4(),
+      id: generateUUID(),
       name: '环境光',
       type: 'ambient',
       color: '#ffffff',
       intensity: 0.4,
     },
     {
-      id: uuidv4(),
+      id: generateUUID(),
       name: '方向光',
       type: 'directional',
       color: '#ffffff',
@@ -186,7 +192,7 @@ export const useTripoStore = create<TripoStore>()(
       materialPresets: createDefaultMaterialPresets(),
 
       // 场景管理方法
-      setScene: (scene: TripoScene) => {
+      setScene: (scene: DSLScene) => {
         set((state) => {
           const newState = { ...state, scene };
           return {
@@ -200,7 +206,7 @@ export const useTripoStore = create<TripoStore>()(
       },
 
       addObject: (object: Partial<SceneObject>) => {
-        const id = uuidv4();
+        const id = generateUUID();
         const newObject: SceneObject = {
           id,
           name: object.name || `对象_${id.slice(0, 8)}`,
@@ -287,7 +293,7 @@ export const useTripoStore = create<TripoStore>()(
             switch (op.type) {
               case 'add':
                 if (op.object) {
-                  const id = uuidv4();
+                  const id = generateUUID();
                   const newObject: SceneObject = {
                     id,
                     name: op.object.name || `对象_${id.slice(0, 8)}`,
@@ -419,7 +425,7 @@ export const useTripoStore = create<TripoStore>()(
         }));
       },
 
-      pushHistory: (scene: TripoScene) => {
+      pushHistory: (scene: DSLScene) => {
         set((state) => ({
           ...state,
           history: {
@@ -450,7 +456,7 @@ export const useTripoStore = create<TripoStore>()(
 
       // 材质管理方法
       createMaterial: (material: Partial<MaterialInline>) => {
-        const id = uuidv4();
+        const id = generateUUID();
         const newMaterial: MaterialInline = {
           type: 'standard',
           color: '#ffffff',
@@ -514,7 +520,7 @@ export const useTripoStore = create<TripoStore>()(
         return get().scene;
       },
 
-      importScene: (scene: TripoScene) => {
+      importScene: (scene: DSLScene) => {
         set((state) => ({
           ...state,
           scene,
@@ -539,6 +545,101 @@ export const useTripoStore = create<TripoStore>()(
             future: [],
           },
         }));
+      },
+
+      // 节点树管理方法
+      moveObject: (id: string, parentId?: string, index?: number) => {
+        set((state) => {
+          const objects = [...state.scene.objects];
+          const targetObj = objects.find((obj) => obj.id === id);
+          if (!targetObj) return state;
+
+          // 移除目标对象从旧的父节点的children中
+          if (targetObj.parent) {
+            const oldParent = objects.find((obj) => obj.id === targetObj.parent);
+            if (oldParent && oldParent.children) {
+              oldParent.children = oldParent.children.filter((childId) => childId !== id);
+            }
+          }
+
+          // 更新目标对象的parent
+          targetObj.parent = parentId;
+
+          // 将目标对象添加到新的父节点的children中
+          if (parentId) {
+            const newParent = objects.find((obj) => obj.id === parentId);
+            if (newParent) {
+              if (!newParent.children) {
+                newParent.children = [];
+              }
+
+              // 如果指定了index，插入到指定位置，否则添加到末尾
+              if (index !== undefined && index >= 0 && index <= newParent.children.length) {
+                newParent.children.splice(index, 0, id);
+              } else {
+                newParent.children.push(id);
+              }
+            }
+          }
+
+          const newScene = {
+            ...state.scene,
+            objects,
+          };
+
+          return {
+            ...state,
+            scene: newScene,
+            history: {
+              past: [...state.history.past, state.history.present],
+              present: newScene,
+              future: [],
+            },
+          };
+        });
+      },
+
+      reorderChildren: (parentId: string, childIds: string[]) => {
+        set((state) => {
+          const objects = [...state.scene.objects];
+          const parent = objects.find((obj) => obj.id === parentId);
+
+          if (!parent) return state;
+
+          // 验证所有childIds都是当前parent的子节点
+          const currentChildren = parent.children || [];
+          const validChildIds = childIds.filter((id) => currentChildren.includes(id));
+
+          // 更新parent的children顺序
+          parent.children = validChildIds;
+
+          const newScene = {
+            ...state.scene,
+            objects,
+          };
+
+          return {
+            ...state,
+            scene: newScene,
+            history: {
+              past: [...state.history.past, state.history.present],
+              present: newScene,
+              future: [],
+            },
+          };
+        });
+      },
+
+      getChildren: (parentId: string) => {
+        const state = get();
+        return state.scene.objects.filter((obj) => obj.parent === parentId);
+      },
+
+      getParent: (childId: string) => {
+        const state = get();
+        const child = state.scene.objects.find((obj) => obj.id === childId);
+        if (!child?.parent) return null;
+        return state.scene.objects.find((obj) => obj.id === child.parent) || null;
       },
     };
   }),

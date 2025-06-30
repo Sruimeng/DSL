@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>场景构建 - TripoScript 2.1</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #00b894 0%, #00cec9 100%);
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+
+        .sidebar {
+            width: 340px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+        }
+
+        .viewport {
+            flex: 1;
+            position: relative;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        h1 {
+            margin: 0 0 20px 0;
+            color: #2c3e50;
+            font-size: 24px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.8);
+            border-radius: 8px;
+            border-left: 4px solid #00b894;
+        }
+
+        .section h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 16px;
+        }
+
+        button {
+            width: 100%;
+            padding: 8px;
+            margin: 3px 0;
+            border: none;
+            border-radius: 4px;
+            background: #00b894;
+            color: white;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background: #00a085;
+            transform: translateY(-1px);
+        }
+
+        .scene-templates {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 15px;
+        }
+
+        .template-btn {
+            padding: 10px;
+            font-size: 11px;
+            text-align: center;
+            background: #74b9ff;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 0;
+        }
+
+        .template-btn:hover {
+            background: #0984e3;
+        }
+
+        .light-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .light-btn {
+            padding: 6px;
+            font-size: 12px;
+            margin: 0;
+        }
+
+        .control-group {
+            margin-bottom: 12px;
+        }
+
+        .control-group label {
+            display: block;
+            font-size: 12px;
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .control-group input[type="range"] {
+            width: 100%;
+            margin-bottom: 5px;
+        }
+
+        .control-group input[type="color"] {
+            width: 100%;
+            height: 25px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .control-group select {
+            width: 100%;
+            padding: 4px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .back-link {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 184, 148, 0.9);
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 6px;
+            z-index: 1000;
+        }
+
+        .scene-info {
+            background: #2c3e50;
+            color: white;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-height: 120px;
+            overflow-y: auto;
+        }
+
+        .environment-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .env-btn {
+            padding: 8px 4px;
+            font-size: 10px;
+            text-align: center;
+            margin: 0;
+        }
+
+        .animation-controls {
+            display: flex;
+            gap: 5px;
+            margin-bottom: 10px;
+        }
+
+        .anim-btn {
+            flex: 1;
+            padding: 6px;
+            font-size: 11px;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <a href="../index.html" class="back-link">← 返回首页</a>
+    
+    <div class="container">
+        <div class="sidebar">
+            <h1>场景构建</h1>
+            
+            <div class="section">
+                <h3>🏗️ 场景模板</h3>
+                <div class="scene-templates">
+                    <button class="template-btn" onclick="buildCityScene()">城市场景</button>
+                    <button class="template-btn" onclick="buildForestScene()">森林场景</button>
+                    <button class="template-btn" onclick="buildMuseumScene()">博物馆</button>
+                    <button class="template-btn" onclick="buildWorkshopScene()">工作室</button>
+                    <button class="template-btn" onclick="buildSpaceScene()">太空场景</button>
+                    <button class="template-btn" onclick="buildMinimalScene()">极简场景</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>💡 光照系统</h3>
+                <div class="light-controls">
+                    <button class="light-btn" onclick="addAmbientLight()">环境光</button>
+                    <button class="light-btn" onclick="addDirectionalLight()">平行光</button>
+                    <button class="light-btn" onclick="addPointLight()">点光源</button>
+                    <button class="light-btn" onclick="addSpotLight()">聚光灯</button>
+                </div>
+                
+                <div class="control-group">
+                    <label>全局亮度: <span id="globalIntensityValue">1.0</span></label>
+                    <input type="range" id="globalIntensity" min="0" max="3" step="0.1" value="1" oninput="updateGlobalLighting()">
+                </div>
+
+                <div class="control-group">
+                    <label>阴影质量:</label>
+                    <select id="shadowQuality" onchange="updateShadowQuality()">
+                        <option value="low">低</option>
+                        <option value="medium" selected>中</option>
+                        <option value="high">高</option>
+                        <option value="ultra">超高</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🌍 环境设置</h3>
+                <div class="environment-grid">
+                    <button class="env-btn" onclick="setEnvironment('day')">白天</button>
+                    <button class="env-btn" onclick="setEnvironment('sunset')">黄昏</button>
+                    <button class="env-btn" onclick="setEnvironment('night')">夜晚</button>
+                    <button class="env-btn" onclick="setEnvironment('studio')">摄影棚</button>
+                    <button class="env-btn" onclick="setEnvironment('nature')">自然</button>
+                    <button class="env-btn" onclick="setEnvironment('urban')">都市</button>
+                </div>
+
+                <div class="control-group">
+                    <label>雾效强度: <span id="fogDensityValue">0.0</span></label>
+                    <input type="range" id="fogDensity" min="0" max="0.1" step="0.001" value="0" oninput="updateFog()">
+                </div>
+
+                <div class="control-group">
+                    <label>雾效颜色:</label>
+                    <input type="color" id="fogColor" value="#cccccc" onchange="updateFog()">
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🎬 相机控制</h3>
+                <div class="control-group">
+                    <label>视角 (FOV): <span id="fovValue">75</span>°</label>
+                    <input type="range" id="fov" min="20" max="120" step="1" value="75" oninput="updateCamera()">
+                </div>
+
+                <div class="control-group">
+                    <label>相机类型:</label>
+                    <select id="cameraType" onchange="updateCameraType()">
+                        <option value="perspective" selected>透视</option>
+                        <option value="orthographic">正交</option>
+                    </select>
+                </div>
+
+                <div class="animation-controls">
+                    <button class="anim-btn" onclick="animateCamera('orbit')">轨道动画</button>
+                    <button class="anim-btn" onclick="animateCamera('flythrough')">飞行动画</button>
+                    <button class="anim-btn" onclick="stopAnimation()">停止动画</button>
+                </div>
+            </div>
+
+            <div class="section">
+                <h3>🔧 快速操作</h3>
+                <button onclick="exportScene()">导出场景</button>
+                <button onclick="importScene()">导入场景</button>
+                <button onclick="optimizeScene()">优化场景</button>
+                <button onclick="resetScene()">重置场景</button>
+            </div>
+
+            <div class="section">
+                <h3>📊 场景信息</h3>
+                <div class="scene-info" id="sceneInfo">
+                    对象数量: 0<br>
+                    光源数量: 2<br>
+                    材质数量: 1<br>
+                    场景大小: 小
+                </div>
+            </div>
+        </div>
+
+        <div class="viewport">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <script type="module">
+        import { TripoEngine, TripoRenderer } from '../../src/index.js';
+        import { Vector3 } from 'three';
+        import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+
+        // 全局变量
+        let engine, renderer, controls;
+        let cameraAnimation = null;
+        let animationFrame = 0;
+
+        // 环境配置
+        const environments = {
+            day: { background: '#87CEEB', ambientColor: '#ffffff', ambientIntensity: 0.6, directionalIntensity: 1.0 },
+            sunset: { background: '#FF6B35', ambientColor: '#FF8C42', ambientIntensity: 0.8, directionalIntensity: 0.7 },
+            night: { background: '#2c3e50', ambientColor: '#34495e', ambientIntensity: 0.3, directionalIntensity: 0.2 },
+            studio: { background: '#f8f9fa', ambientColor: '#ffffff', ambientIntensity: 1.0, directionalIntensity: 0.8 },
+            nature: { background: '#27ae60', ambientColor: '#2ecc71', ambientIntensity: 0.5, directionalIntensity: 0.9 },
+            urban: { background: '#34495e', ambientColor: '#7f8c8d', ambientIntensity: 0.4, directionalIntensity: 0.6 }
+        };
+
+        // 初始化系统
+        function init() {
+            const canvas = document.getElementById('canvas');
+            
+            // 创建DSL引擎
+            engine = new TripoEngine();
+            
+            // 创建渲染器
+            renderer = new TripoRenderer(canvas, engine);
+            
+            // 添加轨道控制器
+            controls = new OrbitControls(
+                renderer.getThreeCamera(), 
+                renderer.getThreeRenderer().domElement
+            );
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            
+            // 监听场景变化
+            engine.subscribe(updateSceneInfo);
+            
+            // 初始化场景
+            buildMinimalScene();
+            
+            // 启动渲染循环
+            animate();
+        }
+
+        // 渲染循环
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            
+            // 处理相机动画
+            if (cameraAnimation) {
+                handleCameraAnimation();
+            }
+        }
+
+        // 处理相机动画
+        function handleCameraAnimation() {
+            animationFrame++;
+            const time = animationFrame * 0.01;
+            
+            if (cameraAnimation === 'orbit') {
+                const radius = 15;
+                const camera = renderer.getThreeCamera();
+                camera.position.x = Math.cos(time) * radius;
+                camera.position.z = Math.sin(time) * radius;
+                camera.position.y = 5 + Math.sin(time * 0.5) * 3;
+                camera.lookAt(0, 0, 0);
+            } else if (cameraAnimation === 'flythrough') {
+                const camera = renderer.getThreeCamera();
+                camera.position.x = Math.sin(time * 0.5) * 20;
+                camera.position.y = 5 + Math.cos(time * 0.3) * 5;
+                camera.position.z = Math.cos(time * 0.5) * 20;
+                camera.lookAt(
+                    Math.sin(time * 0.5 + 1) * 5,
+                    0,
+                    Math.cos(time * 0.5 + 1) * 5
+                );
+            }
+        }
+
+        // 构建城市场景
+        window.buildCityScene = function() {
+            clearScene();
+            
+            // 创建地面
+            engine.addObject({
+                name: '地面',
+                type: 'mesh',
+                geometry: { type: 'plane', size: new Vector3(50, 50, 1) },
+                transform: {
+                    position: new Vector3(0, -1, 0),
+                    rotation: new Vector3(-Math.PI / 2, 0, 0)
+                },
+                material: { type: 'standard', color: '#2c3e50' }
+            });
+
+            // 创建建筑群
+            for (let i = 0; i < 15; i++) {
+                const height = Math.random() * 10 + 3;
+                const width = Math.random() * 2 + 1;
+                const depth = Math.random() * 2 + 1;
+                
+                engine.addObject({
+                    name: `建筑_${i + 1}`,
+                    type: 'mesh',
+                    geometry: { type: 'box', size: new Vector3(width, height, depth) },
+                    transform: {
+                        position: new Vector3(
+                            (Math.random() - 0.5) * 40,
+                            height / 2,
+                            (Math.random() - 0.5) * 40
+                        )
+                    },
+                    material: { type: 'standard', color: getRandomCityColor() }
+                });
+            }
+            
+            setEnvironment('urban');
+            addStreetLights();
+        };
+
+        // 构建森林场景
+        window.buildForestScene = function() {
+            clearScene();
+            
+            // 创建地面
+            engine.addObject({
+                name: '草地',
+                type: 'mesh',
+                geometry: { type: 'plane', size: new Vector3(40, 40, 1) },
+                transform: {
+                    position: new Vector3(0, 0, 0),
+                    rotation: new Vector3(-Math.PI / 2, 0, 0)
+                },
+                material: { type: 'standard', color: '#2ecc71' }
+            });
+
+            // 创建树木
+            for (let i = 0; i < 20; i++) {
+                // 树干
+                const trunkHeight = Math.random() * 3 + 2;
+                engine.addObject({
+                    name: `树干_${i + 1}`,
+                    type: 'mesh',
+                    geometry: { type: 'cylinder', radius: 0.2, height: trunkHeight, radialSegments: 8 },
+                    transform: {
+                        position: new Vector3(
+                            (Math.random() - 0.5) * 30,
+                            trunkHeight / 2,
+                            (Math.random() - 0.5) * 30
+                        )
+                    },
+                    material: { type: 'standard', color: '#8b4513' }
+                });
+
+                // 树冠
+                engine.addObject({
+                    name: `树冠_${i + 1}`,
+                    type: 'mesh',
+                    geometry: { type: 'sphere', radius: Math.random() * 2 + 1.5, radialSegments: 12, heightSegments: 8 },
+                    transform: {
+                        position: new Vector3(
+                            (Math.random() - 0.5) * 30,
+                            trunkHeight + 1.5,
+                            (Math.random() - 0.5) * 30
+                        )
+                    },
+                    material: { type: 'standard', color: '#228b22' }
+                });
+            }
+            
+            setEnvironment('nature');
+        };
+
+        // 构建博物馆场景
+        window.buildMuseumScene = function() {
+            clearScene();
+            
+            // 博物馆地面
+            engine.addObject({
+                name: '大理石地面',
+                type: 'mesh',
+                geometry: { type: 'plane', size: new Vector3(30, 30, 1) },
+                transform: {
+                    position: new Vector3(0, 0, 0),
+                    rotation: new Vector3(-Math.PI / 2, 0, 0)
+                },
+                material: { type: 'standard', color: '#f8f8ff', metalness: 0.1, roughness: 0.2 }
+            });
+
+            // 展示台
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const radius = 8;
+                
+                // 展示台底座
+                engine.addObject({
+                    name: `展示台_${i + 1}`,
+                    type: 'mesh',
+                    geometry: { type: 'cylinder', radius: 1.5, height: 1.5, radialSegments: 16 },
+                    transform: {
+                        position: new Vector3(
+                            Math.cos(angle) * radius,
+                            0.75,
+                            Math.sin(angle) * radius
+                        )
+                    },
+                    material: { type: 'standard', color: '#ecf0f1', metalness: 0.2, roughness: 0.3 }
+                });
+
+                // 展品
+                engine.addObject({
+                    name: `展品_${i + 1}`,
+                    type: 'mesh',
+                    geometry: { type: 'sphere', radius: 0.8, radialSegments: 20, heightSegments: 16 },
+                    transform: {
+                        position: new Vector3(
+                            Math.cos(angle) * radius,
+                            2.3,
+                            Math.sin(angle) * radius
+                        )
+                    },
+                    material: { type: 'standard', color: getRandomArtColor(), metalness: 0.8, roughness: 0.1 }
+                });
+            }
+            
+            setEnvironment('studio');
+            addMuseumLighting();
+        };
+
+        // 构建工作室场景
+        window.buildWorkshopScene = function() {
+            clearScene();
+            
+            // 工作台
+            engine.addObject({
+                name: '工作台',
+                type: 'mesh',
+                geometry: { type: 'box', size: new Vector3(6, 1, 3) },
+                transform: {
+                    position: new Vector3(0, 0.5, 0)
+                },
+                material: { type: 'standard', color: '#8b4513', roughness: 0.8 }
+            });
+
+            // 工具和物品
+            const tools = [
+                { name: '锤子', geom: 'cylinder', pos: [-2, 1.2, 0], color: '#34495e' },
+                { name: '螺丝刀', geom: 'cylinder', pos: [-1, 1.2, 0.5], color: '#e74c3c' },
+                { name: '扳手', geom: 'box', pos: [0, 1.2, -0.5], color: '#95a5a6' },
+                { name: '钳子', geom: 'box', pos: [1, 1.2, 0], color: '#2c3e50' },
+                { name: '测量尺', geom: 'box', pos: [2, 1.2, 0.3], color: '#f39c12' }
+            ];
+
+            tools.forEach(tool => {
+                engine.addObject({
+                    name: tool.name,
+                    type: 'mesh',
+                    geometry: tool.geom === 'cylinder' 
+                        ? { type: 'cylinder', radius: 0.1, height: 0.5, radialSegments: 8 }
+                        : { type: 'box', size: new Vector3(0.3, 0.1, 0.1) },
+                    transform: {
+                        position: new Vector3(...tool.pos)
+                    },
+                    material: { type: 'standard', color: tool.color, metalness: 0.5, roughness: 0.7 }
+                });
+            });
+            
+            setEnvironment('studio');
+        };
+
+        // 构建太空场景
+        window.buildSpaceScene = function() {
+            clearScene();
+            
+            // 空间站
+            engine.addObject({
+                name: '空间站核心',
+                type: 'mesh',
+                geometry: { type: 'sphere', radius: 2, radialSegments: 16, heightSegments: 12 },
+                transform: {
+                    position: new Vector3(0, 0, 0)
+                },
+                material: { type: 'standard', color: '#bdc3c7', metalness: 0.9, roughness: 0.1 }
+            });
+
+            // 太阳能板
+            for (let i = 0; i < 4; i++) {
+                const angle = (i / 4) * Math.PI * 2;
+                engine.addObject({
+                    name: `太阳能板_${i + 1}`,
+                    type: 'mesh',
+                    geometry: { type: 'box', size: new Vector3(4, 0.1, 2) },
+                    transform: {
+                        position: new Vector3(
+                            Math.cos(angle) * 4,
+                            0,
+                            Math.sin(angle) * 4
+                        ),
+                        rotation: new Vector3(0, angle, 0)
+                    },
+                    material: { type: 'standard', color: '#2c3e50', metalness: 0.3, roughness: 0.7 }
+                });
+            }
+
+            // 星星
+            for (let i = 0; i < 50; i++) {
+                engine.addObject({
+                    name: `星星_${i + 1}`,
+                    type: 'mesh',
+                    geometry: { type: 'sphere', radius: 0.1, radialSegments: 6, heightSegments: 4 },
+                    transform: {
+                        position: new Vector3(
+                            (Math.random() - 0.5) * 100,
+                            (Math.random() - 0.5) * 100,
+                            (Math.random() - 0.5) * 100
+                        )
+                    },
+                    material: { type: 'standard', color: '#ffffff', emissive: '#ffffff', emissiveIntensity: 0.5 }
+                });
+            }
+            
+            setEnvironment('night');
+        };
+
+        // 构建极简场景
+        window.buildMinimalScene = function() {
+            clearScene();
+            
+            // 简单的几何体组合
+            engine.addObject({
+                name: '立方体',
+                type: 'mesh',
+                geometry: { type: 'box', size: new Vector3(2, 2, 2) },
+                transform: {
+                    position: new Vector3(-3, 1, 0)
+                },
+                material: { type: 'standard', color: '#3498db' }
+            });
+
+            engine.addObject({
+                name: '球体',
+                type: 'mesh',
+                geometry: { type: 'sphere', radius: 1, radialSegments: 16, heightSegments: 12 },
+                transform: {
+                    position: new Vector3(0, 1, 0)
+                },
+                material: { type: 'standard', color: '#e74c3c' }
+            });
+
+            engine.addObject({
+                name: '圆柱体',
+                type: 'mesh',
+                geometry: { type: 'cylinder', radius: 1, height: 2, radialSegments: 16 },
+                transform: {
+                    position: new Vector3(3, 1, 0)
+                },
+                material: { type: 'standard', color: '#2ecc71' }
+            });
+
+            // 地面
+            engine.addObject({
+                name: '地面',
+                type: 'mesh',
+                geometry: { type: 'plane', size: new Vector3(20, 20, 1) },
+                transform: {
+                    position: new Vector3(0, 0, 0),
+                    rotation: new Vector3(-Math.PI / 2, 0, 0)
+                },
+                material: { type: 'standard', color: '#ecf0f1' }
+            });
+            
+            setEnvironment('studio');
+        };
+
+        // 设置环境
+        window.setEnvironment = function(envType) {
+            const env = environments[envType];
+            if (!env) return;
+
+            // 更新背景
+            const threeScene = renderer.getThreeScene();
+            threeScene.background = new THREE.Color(env.background);
+
+            // 更新环境光
+            const scene = engine.getScene();
+            const ambientLight = scene.lights.find(light => light.type === 'ambient');
+            if (ambientLight) {
+                engine.dispatch({
+                    type: 'UPDATE_LIGHT',
+                    payload: {
+                        id: ambientLight.id,
+                        changes: {
+                            color: env.ambientColor,
+                            intensity: env.ambientIntensity
+                        }
+                    }
+                });
+            }
+
+            // 更新平行光
+            const directionalLight = scene.lights.find(light => light.type === 'directional');
+            if (directionalLight) {
+                engine.dispatch({
+                    type: 'UPDATE_LIGHT',
+                    payload: {
+                        id: directionalLight.id,
+                        changes: {
+                            intensity: env.directionalIntensity
+                        }
+                    }
+                });
+            }
+        };
+
+        // 添加各种光源
+        window.addAmbientLight = function() {
+            engine.addLight({
+                type: 'ambient',
+                color: '#ffffff',
+                intensity: 0.5
+            });
+        };
+
+        window.addDirectionalLight = function() {
+            engine.addLight({
+                type: 'directional',
+                color: '#ffffff',
+                intensity: 0.8,
+                position: new Vector3(5, 10, 5),
+                target: new Vector3(0, 0, 0)
+            });
+        };
+
+        window.addPointLight = function() {
+            engine.addLight({
+                type: 'point',
+                color: '#ffffff',
+                intensity: 1.0,
+                position: new Vector3(0, 5, 0),
+                distance: 20
+            });
+        };
+
+        window.addSpotLight = function() {
+            engine.addLight({
+                type: 'spot',
+                color: '#ffffff',
+                intensity: 1.0,
+                position: new Vector3(0, 10, 0),
+                target: new Vector3(0, 0, 0),
+                angle: Math.PI / 6,
+                penumbra: 0.2
+            });
+        };
+
+        // 更新全局光照
+        window.updateGlobalLighting = function() {
+            const intensity = parseFloat(document.getElementById('globalIntensity').value);
+            document.getElementById('globalIntensityValue').textContent = intensity.toFixed(1);
+            
+            const scene = engine.getScene();
+            scene.lights.forEach(light => {
+                engine.dispatch({
+                    type: 'UPDATE_LIGHT',
+                    payload: {
+                        id: light.id,
+                        changes: { intensity: light.intensity * intensity }
+                    }
+                });
+            });
+        };
+
+        // 更新阴影质量
+        window.updateShadowQuality = function() {
+            const quality = document.getElementById('shadowQuality').value;
+            const renderer = window.renderer?.getThreeRenderer();
+            if (renderer) {
+                const shadowMap = renderer.shadowMap;
+                switch (quality) {
+                    case 'low':
+                        shadowMap.mapSize.setScalar(512);
+                        break;
+                    case 'medium':
+                        shadowMap.mapSize.setScalar(1024);
+                        break;
+                    case 'high':
+                        shadowMap.mapSize.setScalar(2048);
+                        break;
+                    case 'ultra':
+                        shadowMap.mapSize.setScalar(4096);
+                        break;
+                }
+            }
+        };
+
+        // 更新雾效
+        window.updateFog = function() {
+            const density = parseFloat(document.getElementById('fogDensity').value);
+            const color = document.getElementById('fogColor').value;
+            
+            document.getElementById('fogDensityValue').textContent = density.toFixed(3);
+            
+            const threeScene = renderer.getThreeScene();
+            if (density > 0) {
+                threeScene.fog = new THREE.FogExp2(color, density);
+            } else {
+                threeScene.fog = null;
+            }
+        };
+
+        // 更新相机
+        window.updateCamera = function() {
+            const fov = parseInt(document.getElementById('fov').value);
+            document.getElementById('fovValue').textContent = fov;
+            
+            const camera = renderer.getThreeCamera();
+            if (camera.type === 'PerspectiveCamera') {
+                camera.fov = fov;
+                camera.updateProjectionMatrix();
+            }
+        };
+
+        // 更新相机类型
+        window.updateCameraType = function() {
+            const type = document.getElementById('cameraType').value;
+            // 这里需要渲染器支持切换相机类型
+            console.log('切换相机类型到:', type);
+        };
+
+        // 相机动画控制
+        window.animateCamera = function(type) {
+            cameraAnimation = type;
+            animationFrame = 0;
+        };
+
+        window.stopAnimation = function() {
+            cameraAnimation = null;
+        };
+
+        // 场景操作
+        window.exportScene = function() {
+            const scene = engine.exportScene();
+            const blob = new Blob([JSON.stringify(scene, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'scene.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        window.importScene = function() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = '.json';
+            input.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        try {
+                            const scene = JSON.parse(e.target.result);
+                            engine.importScene(scene);
+                        } catch (error) {
+                            alert('无法导入场景文件');
+                        }
+                    };
+                    reader.readAsText(file);
+                }
+            };
+            input.click();
+        };
+
+        window.optimizeScene = function() {
+            // 合并相似材质，移除重复对象等优化操作
+            console.log('优化场景...');
+        };
+
+        window.resetScene = function() {
+            if (confirm('确定要重置场景吗？')) {
+                buildMinimalScene();
+            }
+        };
+
+        // 辅助函数
+        function clearScene() {
+            const scene = engine.getScene();
+            scene.objects.forEach(obj => {
+                engine.removeObject(obj.id);
+            });
+        }
+
+        function getRandomCityColor() {
+            const colors = ['#34495e', '#2c3e50', '#7f8c8d', '#95a5a6', '#bdc3c7'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function getRandomArtColor() {
+            const colors = ['#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6', '#1abc9c'];
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        function addStreetLights() {
+            for (let i = 0; i < 5; i++) {
+                engine.addLight({
+                    type: 'point',
+                    color: '#ffa500',
+                    intensity: 0.8,
+                    position: new Vector3(
+                        (Math.random() - 0.5) * 30,
+                        8,
+                        (Math.random() - 0.5) * 30
+                    ),
+                    distance: 15
+                });
+            }
+        }
+
+        function addMuseumLighting() {
+            // 顶部聚光灯
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const radius = 8;
+                
+                engine.addLight({
+                    type: 'spot',
+                    color: '#ffffff',
+                    intensity: 0.8,
+                    position: new Vector3(
+                        Math.cos(angle) * radius,
+                        8,
+                        Math.sin(angle) * radius
+                    ),
+                    target: new Vector3(
+                        Math.cos(angle) * radius,
+                        0,
+                        Math.sin(angle) * radius
+                    ),
+                    angle: Math.PI / 8,
+                    penumbra: 0.3
+                });
+            }
+        }
+
+        function updateSceneInfo(scene) {
+            const info = document.getElementById('sceneInfo');
+            const objectCount = scene.objects.length;
+            const lightCount = scene.lights.length;
+            const materialCount = scene.materials.length;
+            const sceneSize = objectCount < 10 ? '小' : objectCount < 30 ? '中' : '大';
+            
+            info.innerHTML = `
+                对象数量: ${objectCount}<br>
+                光源数量: ${lightCount}<br>
+                材质数量: ${materialCount}<br>
+                场景大小: ${sceneSize}
+            `;
+        }
+
+        // 窗口大小调整
+        window.addEventListener('resize', () => {
+            const canvas = document.getElementById('canvas');
+            renderer.resize(canvas.clientWidth, canvas.clientHeight);
+        });
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html> 

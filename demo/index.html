@@ -1,12 +1,60 @@
 <!doctype html>
-<html lang="en">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
-    <title>TripoScript 2.1 Demo</title>
+    <title>TripoScript 2.1 纯JS Demo</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+    <link rel="stylesheet" href="styles.css" />
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="/main.tsx"></script>
+    <header>
+      <h1>TripoScript 2.1 纯JavaScript Demo</h1>
+      <p>框架无关的3D场景DSL引擎演示</p>
+    </header>
+
+    <main class="demo-grid">
+      <div class="demo-card">
+        <h3>基础示例</h3>
+        <p>展示DSL引擎的核心功能和基本使用方法</p>
+        <a href="js/basic-example.html" class="demo-link">查看演示</a>
+      </div>
+
+      <div class="demo-card">
+        <h3>对象操作</h3>
+        <p>创建、修改、删除3D对象，展示Action模式</p>
+        <a href="js/object-operations.html" class="demo-link">查看演示</a>
+      </div>
+
+      <div class="demo-card">
+        <h3>材质管理</h3>
+        <p>材质创建、修改和应用，支持多种材质类型</p>
+        <a href="js/material-manager.html" class="demo-link">查看演示</a>
+      </div>
+
+      <div class="demo-card">
+        <h3>场景构建</h3>
+        <p>复杂3D场景的搭建，包含光照和环境设置</p>
+        <a href="js/scene-builder.html" class="demo-link">查看演示</a>
+      </div>
+
+      <div class="demo-card">
+        <h3>交互控制</h3>
+        <p>鼠标控制、动画和实时交互功能</p>
+        <a href="js/interactive-demo.html" class="demo-link">查看演示</a>
+      </div>
+
+      <div class="demo-card">
+        <h3>性能测试</h3>
+        <p>大量对象管理和性能优化展示</p>
+        <a href="js/performance-test.html" class="demo-link">查看演示</a>
+      </div>
+    </main>
+
+    <footer>
+      <p>
+        <strong>架构特点：</strong>
+        框架无关 | Action模式 | 状态驱动 | 自动同步渲染
+      </p>
+    </footer>
   </body>
 </html>
