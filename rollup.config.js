@@ -1,6 +1,6 @@
+import pkg from './package.json';
 import { getPlugins } from './scripts/rollup-config-helper';
 
-const pkg = require('./package.json');
 const banner = `/*!
  * Name: ${pkg.name}
  * Description: ${pkg.description}
@@ -12,36 +12,17 @@ const banner = `/*!
 
 const plugins = getPlugins(pkg);
 
-export default (commandLineArgs) => {
+export default () => {
   return [
     {
       input: 'src/index.ts',
-      output: [
-        {
-          file: pkg.module,
-          format: 'es',
-          banner,
-          sourcemap: true,
-        },
-        {
-          file: pkg.main,
-          format: 'cjs',
-          banner,
-          sourcemap: true,
-        },
-      ],
-      plugins,
-    },
-    {
-      input: 'src/index.ts',
       output: {
-        file: pkg.brower,
-        format: 'umd',
-        name: 'Galacean.effects',
+        file: pkg.module,
+        format: 'es',
         banner,
         sourcemap: true,
       },
-      plugins: getPlugins(pkg, { min: true }),
+      plugins,
     },
   ];
 };

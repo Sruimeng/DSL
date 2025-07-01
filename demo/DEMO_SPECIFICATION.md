@@ -32,11 +32,11 @@
 
 ## 🎨 布局规范
 
-### 标准二栏布局
+### 标准二栏布局 + 左上角统计面板
 
 ```
-┌─────────────────────┬─────────────┐
-│                     │   操作栏    │
+┌─📊──────────────────┬─────────────┐
+│ 统计面板            │   操作栏    │
 │     展示区域        │  (320px)    │
 │   (Canvas 3D)       │             │
 │                     │             │
@@ -51,6 +51,20 @@
   - flex: 1 (自适应宽度)
   - 最小宽度保护
   - Canvas 全屏显示
+  - **左上角悬浮统计面板** (新增)
+
+### 左上角统计面板 (Top Stats Panel) - **必需**
+- **位置**: 固定在左上角 (top: 10px, left: 10px)
+- **样式**: 
+  - 半透明黑色背景 rgba(0,0,0,0.8)
+  - 毛玻璃效果 backdrop-filter: blur(10px)
+  - 圆角边框 border-radius: 8px
+  - 等宽字体 monospace
+- **内容**:
+  - 历史统计信息 (Actions数量、当前索引等)
+  - Undo/Redo 状态显示
+  - 内存使用情况
+  - 最近操作列表
 
 ### 右侧操作栏 (Control Panel)
 - **固定宽度**: 320px
@@ -59,8 +73,7 @@
   2. **Undo/Redo 控制区** (必需)
   3. **操作历史显示** (必需)
   4. 功能控制区域
-  5. 统计信息区域
-  6. 日志区域
+  5. 日志区域 (统计信息已移至左上角)
 
 ## ⚡ 功能要求
 
@@ -167,7 +180,37 @@ document.addEventListener('DOMContentLoaded', init);
 
 ### 必需组件
 
-#### 1. Undo/Redo 控制区
+#### 1. 左上角统计面板 (新增 - 必需)
+```html
+<!-- 左上角统计面板 -->
+<div class="top-stats-panel" id="topStatsPanel">
+    <div class="stats-title">📚 历史统计</div>
+    <div class="stats-grid" id="topStats">
+        <!-- 统计信息将在这里动态更新 -->
+    </div>
+</div>
+```
+
+**CSS样式:**
+```css
+.top-stats-panel {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px;
+    border-radius: 8px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 1000;
+    min-width: 200px;
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+```
+
+#### 2. Undo/Redo 控制区
 ```html
 <div class="undo-redo-section">
   <div class="undo-redo-controls">
@@ -178,7 +221,7 @@ document.addEventListener('DOMContentLoaded', init);
 </div>
 ```
 
-#### 2. 操作历史显示
+#### 3. 操作历史显示
 ```html
 <div class="history-section">
   <div class="history-title">📜 操作历史</div>
@@ -186,7 +229,7 @@ document.addEventListener('DOMContentLoaded', init);
 </div>
 ```
 
-#### 3. 控制区域模板
+#### 4. 控制区域模板
 ```html
 <div class="control-section">
   <div class="section-title">🏗️ [功能名称]</div>
@@ -250,31 +293,64 @@ document.addEventListener('DOMContentLoaded', init);
 
 ## ✨ 最佳实践
 
-### 1. Undo/Redo 实现
+### 1. Undo/Redo 实现 (使用引擎内置系统)
+
+**重要更新**: 现在使用引擎内置的状态快照式undo/redo系统，无需手动管理历史栈。
 
 ```typescript
-// 保存状态前检查是否为 undo/redo 操作
-function saveState(actionType: string, actionData: any): void {
-  if (isUndoRedoOperation) return;
-  
-  const action: DSLAction = {
-    type: actionType,
-    payload: actionData,
-    timestamp: new Date().toLocaleTimeString(),
-    previousState: JSON.parse(JSON.stringify(engine.getScene()))
-  };
-  
-  undoStack.push(action);
-  redoStack.length = 0; // 清空重做栈
-  
-  // 限制历史记录数量
-  if (undoStack.length > 50) {
-    undoStack.shift();
+// 更新UI状态 - 新版本实现
+function updateUIState(): void {
+  const canUndo = engine.canUndo();
+  const canRedo = engine.canRedo();
+
+  // 更新按钮可用性 - 直接操作DOM元素
+  const undoBtn = document.querySelector('[onclick="undo()"]') as HTMLButtonElement;
+  const redoBtn = document.querySelector('[onclick="redo()"]') as HTMLButtonElement;
+
+  if (undoBtn) {
+    undoBtn.disabled = !canUndo;
+    undoBtn.style.opacity = canUndo ? '1' : '0.5';
+    undoBtn.title = `撤销${canUndo ? ' (可用)' : ' (不可用)'}`;
   }
-  
-  updateUndoRedoButtons(undoStack, redoStack);
+
+  if (redoBtn) {
+    redoBtn.disabled = !canRedo;
+    redoBtn.style.opacity = canRedo ? '1' : '0.5';
+    redoBtn.title = `重做${canRedo ? ' (可用)' : ' (不可用)'}`;
+  }
+
+  // 显示历史统计信息
+  const historyStats = engine.getHistoryStats();
+  updateHistoryDisplay(historyStats);
+}
+
+// 撤销和重做操作 - 简化实现
+function undoOperation(): void {
+  const success = engine.undo();
+  if (success) {
+    log('↶ 撤销操作成功');
+  } else {
+    log('⚠️ 没有可撤销的操作');
+  }
+  updateUIState();
+}
+
+function redoOperation(): void {
+  const success = engine.redo();
+  if (success) {
+    log('↷ 重做操作成功');
+  } else {
+    log('⚠️ 没有可重做的操作');
+  }
+  updateUIState();
 }
 ```
+
+**关键变化**:
+- ❌ 不再使用 `updateUndoRedoButtons([], [])` (会导致按钮被错误禁用)
+- ✅ 直接使用引擎的 `canUndo()` 和 `canRedo()` 方法
+- ✅ 引擎自动管理状态快照，无需手动保存状态
+- ✅ 所有操作类型都支持正确的撤销/重做
 
 ### 2. 状态恢复
 
@@ -296,24 +372,33 @@ function restoreSceneState(sceneState: DSLScene): void {
 }
 ```
 
-### 3. 操作方法模板
+### 3. 操作方法模板 (新版本 - 简化)
 
 ```typescript
-(window as any).addObject = function(): void {
+// 新的操作方法模板 - 无需手动保存状态
+function addCubeOperation(): void {
   const objectData = {
-    // 对象定义...
+    name: `立方体_${++objectCount}`,
+    type: 'mesh',
+    geometry: { type: 'box', size: new Vector3(1, 1, 1) },
+    transform: { position: new Vector3(0, 0, 0) },
+    material: { id: 'default' },
   };
-  
-  // 1. 保存状态
-  saveState('ADD_OBJECT', objectData);
-  
-  // 2. 执行操作
+
+  // 引擎自动处理undo/redo历史记录
   const id = engine.addObject(objectData);
-  
-  // 3. 记录日志
-  log(`📦 添加对象: ${id}`);
-};
+  log(`📦 添加立方体: ${id}`);
+}
+
+// 全局函数暴露 - 确保HTML按钮可以调用
+(window as any).addCube = addCubeOperation;
 ```
+
+**关键简化**:
+- ❌ 不再需要手动调用 `saveState()`
+- ❌ 不再需要管理 `isUndoRedoOperation` 标志
+- ✅ 引擎的 `dispatch()` 系统自动处理历史记录
+- ✅ 所有通过引擎API的操作都自动支持undo/redo
 
 ### 4. 错误处理
 
@@ -339,7 +424,9 @@ try {
 
 #### UI 检查
 - [ ] 左右布局响应式
-- [ ] 按钮状态正确更新
+- [ ] **左上角统计面板正确显示** (新增)
+- [ ] 统计信息实时更新 (Actions、索引、内存等)
+- [ ] 按钮状态正确更新 (不被错误禁用)
 - [ ] 滚动区域工作正常
 - [ ] 移动端适配良好
 
@@ -374,16 +461,23 @@ try {
 ## 📚 参考示例
 
 完整参考实现请查看:
-- `demo/html/basic-dsl.html` - HTML 结构
-- `demo/src/basic-dsl.ts` - TypeScript 逻辑  
+- `demo/html/basic-dsl.html` - **最新HTML结构** (包含左上角统计面板)
+- `demo/src/basic-dsl.ts` - **最新TypeScript逻辑** (使用引擎内置undo/redo)
 - `demo/src/utils.ts` - 工具函数
 
-这些文件提供了完整的 Undo/Redo 实现和标准化的 Demo 结构，可以作为新 Demo 开发的模板。
+**最新更新内容**:
+- ✅ 引擎内置状态快照式undo/redo系统
+- ✅ 左上角悬浮统计面板
+- ✅ 简化的操作方法实现
+- ✅ 修复重做按钮被错误禁用的问题
 
 ---
 
-**📌 重要提醒:** 
-- Undo/Redo 功能是必需的，不是可选的
-- 左右布局是标准规范，不要更改
+**📌 重要提醒 (2024更新):** 
+- **左上角统计面板是必需的**，用于显示历史统计
+- Undo/Redo 功能使用引擎内置系统，无需手动管理
+- ❌ 不要使用 `updateUndoRedoButtons([], [])` (会导致按钮被禁用)
+- ✅ 使用 `engine.canUndo()` 和 `engine.canRedo()` 检查状态
+- 左右布局 + 左上角统计面板是新的标准规范
 - 操作栏宽度固定为 320px
 - 所有 Demo 都必须包含完整的状态监控和日志记录 

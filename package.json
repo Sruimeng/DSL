@@ -3,26 +3,21 @@
   "version": "0.0.1",
   "description": "FBX2glTF is a command-line tool for the conversion of 3D model assets on the FBX file format to the glTF file format.",
   "module": "./dist/index.mjs",
-  "main": "./dist/index.js",
-  "brower": "./dist/index.min.js",
   "type": "module",
   "files": [
     "dist"
   ],
   "exports": {
     ".": {
-      "import": "./dist/index.mjs",
-      "require": "./dist/index.js",
-      "types": "./dist/index.d.ts"
+      "import": "./dist/index.mjs"
     }
   },
   "scripts": {
     "dev": "vite",
     "preview": "concurrently \"vite build\" \"sleep 6 && vite preview\"",
     "prebuild": "pnpm clean",
-    "build": "pnpm build:declaration && pnpm build:module",
+    "build": "pnpm build:module",
     "build:module": "rollup -c",
-    "build:declaration": "tsc -d --emitDeclarationOnly",
     "build:docs": "pnpm build && typedoc",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

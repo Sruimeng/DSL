@@ -596,13 +596,13 @@ export class DSLEngine {
    */
   redo(): boolean {
     if (!this.canRedo()) {
-      console.log('⚠️ 无法重做：没有可重做的操作');
+      console.warn('DSL Engine: 无法重做：没有可重做的操作');
       return false;
     }
 
     this.historyIndex++;
     const entry = this.actionHistory[this.historyIndex];
-    console.log('🔄 重做操作:', entry);
+    console.log('🔄 重做操作=====:', entry);
 
     // 标记为undo/redo操作，防止递归记录
     this.isUndoRedoing = true;

@@ -3,8 +3,8 @@
 // @ts-nocheck
 import { Color, Vector3 } from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { DSLEngine, DSLRenderer } from '../../src/index.js';
-import { animate, log, setupResize, updateStats, updateUndoRedoButtons } from './utils.ts';
+import { DSLEngine, DSLRenderer } from '../../src/index.ts';
+import { animate, log, setupResize, updateStats } from './utils.ts';
 
 // 全局变量
 let engine: DSLEngine;
@@ -27,40 +27,48 @@ const backgrounds = [
 
 // 更新历史统计显示
 function updateHistoryDisplay(stats: any): void {
-  // 找到或创建统计信息显示元素
-  let statsDisplay = document.getElementById('history-stats');
-  if (!statsDisplay) {
-    statsDisplay = document.createElement('div');
-    statsDisplay.id = 'history-stats';
-    statsDisplay.style.cssText = `
-      position: fixed;
-      top: 10px;
-      right: 10px;
-      background: rgba(0,0,0,0.8);
-      color: white;
-      padding: 10px;
-      border-radius: 5px;
-      font-family: monospace;
-      font-size: 12px;
-      z-index: 1000;
-      min-width: 200px;
-    `;
-    document.body.appendChild(statsDisplay);
-  }
+  const statsDisplay = document.getElementById('topStats');
+  if (!statsDisplay) return;
 
-  // 更新显示内容
+  // 更新左上角统计面板的内容
   statsDisplay.innerHTML = `
-    <div><strong>📚 历史统计</strong></div>
-    <div>Actions: ${stats.totalActions}</div>
-    <div>当前索引: ${stats.currentIndex}</div>
-    <div>内存占用: ~${stats.memoryUsageKB}KB</div>
-    <div>可撤销: ${stats.canUndo ? '✅' : '❌'}</div>
-    <div>可重做: ${stats.canRedo ? '✅' : '❌'}</div>
+    <div class="stat-item">
+      <span class="label">Actions:</span>
+      <span class="value">${stats.totalActions}</span>
+    </div>
+    <div class="stat-item">
+      <span class="label">当前索引:</span>
+      <span class="value">${stats.currentIndex}</span>
+    </div>
+    <div class="stat-item">
+      <span class="label">内存占用:</span>
+      <span class="value">~${stats.memoryUsageKB}KB</span>
+    </div>
+    <div class="stat-item">
+      <span class="label">可撤销:</span>
+      <span class="value">${stats.canUndo ? '✅' : '❌'}</span>
+    </div>
+    <div class="stat-item">
+      <span class="label">可重做:</span>
+      <span class="value">${stats.canRedo ? '✅' : '❌'}</span>
+    </div>
     ${
       stats.recentActions.length > 0
         ? `
-    <div style="margin-top: 5px;"><strong>最近Actions:</strong></div>
-    ${stats.recentActions.map((action: any) => `<div>• ${action.type}</div>`).join('')}
+    <div class="stat-item" style="margin-top: 8px;">
+      <span class="label">最近Actions:</span>
+      <span class="value"></span>
+    </div>
+    ${stats.recentActions
+      .map(
+        (action: any) => `
+    <div class="stat-item">
+      <span class="label">•</span>
+      <span class="value">${action.type}</span>
+    </div>
+    `,
+      )
+      .join('')}
     `
         : ''
     }
@@ -72,9 +80,6 @@ function updateUIState(): void {
   const canUndo = engine.canUndo();
   const canRedo = engine.canRedo();
 
-  // 更新按钮状态（传入空数组，因为我们使用引擎的状态）
-  updateUndoRedoButtons([], []);
-
   // 更新按钮可用性
   const undoBtn = document.querySelector('[onclick="undo()"]') as HTMLButtonElement;
   const redoBtn = document.querySelector('[onclick="redo()"]') as HTMLButtonElement;
@@ -82,11 +87,13 @@ function updateUIState(): void {
   if (undoBtn) {
     undoBtn.disabled = !canUndo;
     undoBtn.style.opacity = canUndo ? '1' : '0.5';
+    undoBtn.title = `撤销${canUndo ? ' (可用)' : ' (不可用)'}`;
   }
 
   if (redoBtn) {
     redoBtn.disabled = !canRedo;
     redoBtn.style.opacity = canRedo ? '1' : '0.5';
+    redoBtn.title = `重做${canRedo ? ' (可用)' : ' (不可用)'}`;
   }
 
   // 显示历史统计信息
