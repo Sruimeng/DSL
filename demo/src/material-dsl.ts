@@ -367,7 +367,14 @@ function syncCurrentMaterialFromEngine(): void {
   const material = scene.materials.find((m) => m.id === currentMaterialState.id);
 
   if (material) {
-    currentMaterialState = { ...material };
+    // ✅ 修复：保持当前材质ID和名称不变，只同步属性值
+    const originalId = currentMaterialState.id;
+    const originalName = currentMaterialState.name;
+    currentMaterialState = {
+      ...material,
+      id: originalId, // 保持原有ID
+      name: originalName, // 保持原有名称
+    };
     updateAllControls();
     log('🔄 材质参数已同步');
   }
@@ -601,15 +608,24 @@ function loadMaterialPresetOperation(presetKey: string): void {
     return;
   }
 
-  // 更新当前材质状态
-  currentMaterialState = { ...preset };
+  // ✅ 修复：保持当前材质ID不变，只复制预设的属性值
+  const originalId = currentMaterialState.id;
+  currentMaterialState = {
+    ...preset,
+    id: originalId, // 保持原有ID
+    name: '当前材质', // 保持当前材质名称
+  };
 
-  // 通过DSL Action更新材质
+  // 通过DSL Action更新材质（使用固定的当前材质ID）
   engine.dispatch({
     type: ActionTypes.UPDATE_MATERIAL,
     payload: {
-      id: currentMaterialState.id,
-      changes: preset,
+      id: originalId, // 使用固定的当前材质ID
+      changes: {
+        ...preset,
+        id: originalId, // 确保changes中的ID也是正确的
+        name: '当前材质',
+      },
     },
   });
 
@@ -627,7 +643,7 @@ function loadMaterialPresetOperation(presetKey: string): void {
     }
   });
 
-  log(`✨ 加载材质预设: ${preset.name}`);
+  log(`✨ 加载材质预设: ${preset.name} -> 当前材质`);
 }
 
 // 应用材质到选中对象 - 使用DSL Action
@@ -694,8 +710,10 @@ function saveMaterialOperation(): void {
 
 // 重置材质参数 - 使用DSL Action
 function resetMaterialOperation(): void {
+  // ✅ 明确保存原有ID，确保一致性
+  const originalId = currentMaterialState.id;
   const defaultMaterial = {
-    id: currentMaterialState.id,
+    id: originalId,
     name: '当前材质',
     type: 'standard',
     color: '#ffffff',
@@ -713,7 +731,7 @@ function resetMaterialOperation(): void {
   engine.dispatch({
     type: ActionTypes.UPDATE_MATERIAL,
     payload: {
-      id: currentMaterialState.id,
+      id: originalId, // 使用明确保存的ID
       changes: defaultMaterial,
     },
   });
