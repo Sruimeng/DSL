@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripoScript 2.1 DSL - 节点树管理演示</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* ========== 主布局 ========== */
+        .app-container {
+            display: flex;
+            height: 100vh;
+            background: white;
+            border-radius: 12px;
+            margin: 8px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        /* ========== 左侧展示区 ========== */
+        .viewer-section {
+            flex: 1;
+            position: relative;
+            background: #f8f9fa;
+            min-width: 600px;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 8px 0 0 8px;
+        }
+
+        /* ========== 左上角统计面板 (必需) ========== */
+        .top-stats-panel {
+            position: fixed;
+            top: 18px;
+            left: 18px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+            font-size: 12px;
+            z-index: 1000;
+            min-width: 220px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-title {
+            color: #64b5f6;
+            font-weight: 600;
+            margin-bottom: 8px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 4px;
+        }
+
+        .stats-grid {
+            display: grid;
+            gap: 4px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-item .label {
+            color: #b0bec5;
+            font-size: 11px;
+        }
+
+        .stat-item .value {
+            color: #fff;
+            font-weight: 500;
+        }
+
+        /* ========== 右侧控制面板 ========== */
+        .control-panel {
+            width: 380px;
+            background: #fafbfc;
+            border-left: 2px solid #e9ecef;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* 面板标题 */
+        .panel-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 16px 20px;
+            font-size: 16px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Undo/Redo 控制区 */
+        .undo-redo-section {
+            padding: 16px 20px;
+            background: white;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .undo-redo-controls {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 8px;
+        }
+
+        .undo-btn, .redo-btn {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            background: white;
+            color: #495057;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .undo-btn:hover:not(:disabled), .redo-btn:hover:not(:disabled) {
+            background: #f8f9fa;
+            border-color: #6c757d;
+        }
+
+        .undo-btn:disabled, .redo-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .clear-history-btn {
+            width: 100%;
+            padding: 6px 12px;
+            border: 1px solid #dc3545;
+            border-radius: 4px;
+            background: white;
+            color: #dc3545;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .clear-history-btn:hover {
+            background: #dc3545;
+            color: white;
+        }
+
+        /* 滚动容器 */
+        .panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+
+        /* 控制区块 */
+        .control-section {
+            background: white;
+            margin-bottom: 1px;
+            border-bottom: 1px solid #e9ecef;
+        }
+
+        .section-title {
+            background: #f8f9fa;
+            padding: 12px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #343a40;
+            border-bottom: 1px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-content {
+            padding: 16px 20px;
+        }
+
+        /* 节点树视图 */
+        .node-tree {
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            background: #f8f9fa;
+        }
+
+        .tree-node {
+            display: flex;
+            align-items: center;
+            padding: 4px 8px;
+            cursor: pointer;
+            border-bottom: 1px solid #e9ecef;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .tree-node:hover {
+            background: #e9ecef;
+        }
+
+        .tree-node.selected {
+            background: #007bff;
+            color: white;
+        }
+
+        .tree-node-indent {
+            margin-left: 16px;
+        }
+
+        /* Transform编辑器 */
+        .transform-editor {
+            display: grid;
+            gap: 12px;
+        }
+
+        .transform-group {
+            display: grid;
+            gap: 8px;
+        }
+
+        .transform-group-title {
+            font-size: 12px;
+            font-weight: 600;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .transform-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 6px;
+        }
+
+        .transform-input {
+            padding: 6px 8px;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            font-size: 12px;
+            font-family: monospace;
+        }
+
+        .transform-input:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
+        /* 按钮样式 */
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .button-grid.single {
+            grid-template-columns: 1fr;
+        }
+
+        .btn {
+            padding: 10px 14px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #5a6268;
+            transform: translateY(-1px);
+        }
+
+        .btn-accent {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+        }
+
+        .btn-accent:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+            color: #8b5a2b;
+        }
+
+        .btn-warning:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(252, 182, 159, 0.4);
+        }
+
+        /* 文件输入 */
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 14px;
+            border: 2px dashed #dee2e6;
+            border-radius: 6px;
+            background: #f8f9fa;
+            color: #6c757d;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+        }
+
+        .file-input-label:hover {
+            border-color: #007bff;
+            background: #e3f2fd;
+            color: #007bff;
+        }
+
+        /* 日志区域 */
+        .log-section {
+            background: #2d3748;
+            color: #e2e8f0;
+            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
+        }
+
+        .log-content {
+            height: 180px;
+            overflow-y: auto;
+            padding: 12px;
+            font-size: 11px;
+            line-height: 1.4;
+        }
+
+        .log-entry {
+            margin-bottom: 4px;
+            opacity: 0.9;
+        }
+
+        .log-entry:last-child {
+            opacity: 1;
+            color: #90cdf4;
+        }
+
+        /* 滚动条样式 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1200px) {
+            .control-panel {
+                width: 320px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .app-container {
+                flex-direction: column;
+                margin: 4px;
+            }
+            
+            .viewer-section {
+                min-width: auto;
+                height: 60vh;
+            }
+            
+            .control-panel {
+                width: 100%;
+                height: 40vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- 左侧展示区 -->
+        <div class="viewer-section">
+            <canvas id="canvas"></canvas>
+            
+            <!-- 左上角统计面板 -->
+            <div class="top-stats-panel" id="topStatsPanel">
+                <div class="stats-title">📊 节点树统计</div>
+                <div class="stats-grid" id="topStats">
+                    <!-- 统计信息将在这里动态更新 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 右侧控制面板 -->
+        <div class="control-panel">
+            <!-- 面板标题 -->
+            <div class="panel-header">
+                🌳 节点树管理器
+                <div style="margin-left: auto; font-size: 12px; opacity: 0.9;">
+                    TripoScript 2.1 DSL
+                </div>
+            </div>
+
+            <!-- Undo/Redo 控制区 -->
+            <div class="undo-redo-section">
+                <div class="undo-redo-controls">
+                    <button id="undoBtn" class="undo-btn" onclick="undo()">↶ 撤销</button>
+                    <button id="redoBtn" class="redo-btn" onclick="redo()">↷ 重做</button>
+                </div>
+                <button class="clear-history-btn" onclick="clearHistory()">🗑️ 清空历史</button>
+            </div>
+
+            <div class="panel-content">
+                <!-- 模型加载区 -->
+                <div class="control-section">
+                    <div class="section-title">📁 模型加载</div>
+                    <div class="section-content">
+                        <!-- 预设模型选择 -->
+                        <div style="margin-bottom: 16px;">
+                            <label style="display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: #6c757d;">
+                                🎨 预设模型 (推荐)
+                            </label>
+                            <select id="presetModelSelect" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 12px;">
+                                <option value="">选择预设模型...</option>
+                            </select>
+                            <button class="btn btn-primary" style="width: 100%; margin-top: 8px;" onclick="loadSelectedPresetModel()">
+                                🚀 加载选中模型
+                            </button>
+                        </div>
+
+                        <!-- 文件上传 (保留但不推荐) -->
+                        <div style="opacity: 0.7; margin-bottom: 16px;">
+                            <div class="file-input-wrapper">
+                                <input type="file" id="modelFile" accept=".glb,.gltf,.fbx" onchange="loadModelFile(event)">
+                                <label for="modelFile" class="file-input-label" style="font-size: 11px;">
+                                    📥 上传文件 (不稳定)
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- 示例几何体 -->
+                        <div class="button-grid">
+                            <button class="btn btn-primary" onclick="loadSampleModel('cube')">
+                                📦 示例立方体
+                            </button>
+                            <button class="btn btn-primary" onclick="loadSampleModel('sphere')">
+                                🔮 示例球体
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 节点树视图 -->
+                <div class="control-section">
+                    <div class="section-title">🌳 节点树</div>
+                    <div class="section-content">
+                        <div id="nodeTree" class="node-tree">
+                            <!-- 节点树将在这里动态生成 -->
+                        </div>
+                        <div class="button-grid" style="margin-top: 12px;">
+                            <button class="btn btn-secondary" onclick="expandAll()">
+                                📂 展开全部
+                            </button>
+                            <button class="btn btn-secondary" onclick="collapseAll()">
+                                📁 折叠全部
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Transform编辑器 -->
+                <div class="control-section">
+                    <div class="section-title">🎯 Transform 编辑器</div>
+                    <div class="section-content">
+                        <div class="transform-editor">
+                            <!-- 位置 -->
+                            <div class="transform-group">
+                                <div class="transform-group-title">Position (位置)</div>
+                                <div class="transform-inputs">
+                                    <input type="number" id="posX" class="transform-input" step="0.1" 
+                                           placeholder="X" onchange="updateTransform('position', 'x', this.value)">
+                                    <input type="number" id="posY" class="transform-input" step="0.1" 
+                                           placeholder="Y" onchange="updateTransform('position', 'y', this.value)">
+                                    <input type="number" id="posZ" class="transform-input" step="0.1" 
+                                           placeholder="Z" onchange="updateTransform('position', 'z', this.value)">
+                                </div>
+                            </div>
+                            
+                            <!-- 旋转 -->
+                            <div class="transform-group">
+                                <div class="transform-group-title">Rotation (旋转)</div>
+                                <div class="transform-inputs">
+                                    <input type="number" id="rotX" class="transform-input" step="0.1" 
+                                           placeholder="X" onchange="updateTransform('rotation', 'x', this.value)">
+                                    <input type="number" id="rotY" class="transform-input" step="0.1" 
+                                           placeholder="Y" onchange="updateTransform('rotation', 'y', this.value)">
+                                    <input type="number" id="rotZ" class="transform-input" step="0.1" 
+                                           placeholder="Z" onchange="updateTransform('rotation', 'z', this.value)">
+                                </div>
+                            </div>
+                            
+                            <!-- 缩放 -->
+                            <div class="transform-group">
+                                <div class="transform-group-title">Scale (缩放)</div>
+                                <div class="transform-inputs">
+                                    <input type="number" id="scaleX" class="transform-input" step="0.1" 
+                                           placeholder="X" onchange="updateTransform('scale', 'x', this.value)">
+                                    <input type="number" id="scaleY" class="transform-input" step="0.1" 
+                                           placeholder="Y" onchange="updateTransform('scale', 'y', this.value)">
+                                    <input type="number" id="scaleZ" class="transform-input" step="0.1" 
+                                           placeholder="Z" onchange="updateTransform('scale', 'z', this.value)">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 节点操作 -->
+                <div class="control-section">
+                    <div class="section-title">⚙️ 节点操作</div>
+                    <div class="section-content">
+                        <div class="button-grid">
+                            <button class="btn btn-accent" onclick="duplicateSelectedNode()">
+                                📋 复制节点
+                            </button>
+                            <button class="btn btn-secondary" onclick="toggleNodeVisibility()">
+                                👁️ 显示/隐藏
+                            </button>
+                        </div>
+                        <div class="button-grid">
+                            <button class="btn btn-warning" onclick="deleteSelectedNode()">
+                                🗑️ 删除节点
+                            </button>
+                            <button class="btn btn-primary" onclick="resetNodeTransform()">
+                                🔄 重置Transform
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 场景管理 -->
+                <div class="control-section">
+                    <div class="section-title">🎬 场景管理</div>
+                    <div class="section-content">
+                        <div class="button-grid">
+                            <button class="btn btn-secondary" onclick="exportScene()">
+                                💾 导出场景
+                            </button>
+                            <button class="btn btn-warning" onclick="clearScene()">
+                                🗑️ 清空场景
+                            </button>
+                        </div>
+                        <div class="button-grid single">
+                            <button class="btn btn-primary" onclick="resetCamera()">
+                                📷 重置相机
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 日志区域 -->
+                <div class="control-section log-section">
+                    <div class="section-title" style="background: #4a5568; color: #e2e8f0;">
+                        📝 操作日志
+                    </div>
+                    <div class="log-content" id="logContent">
+                        <!-- 日志条目将在这里显示 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入脚本 -->
+    <script type="module" src="../src/node-tree-dsl.ts"></script>
+</body>
+</html>
