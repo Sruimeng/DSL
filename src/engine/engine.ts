@@ -12,7 +12,7 @@ import {
 } from '../types';
 
 /**
- * 历史记录条目 - 使用状态快照而非逆操作
+ * 历史记录条目
  */
 interface HistoryEntry {
   action: DSLAction;
