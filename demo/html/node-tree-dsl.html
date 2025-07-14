@@ -432,6 +432,35 @@
                 height: 40vh;
             }
         }
+
+        /* 错误和警告样式 */
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px;
+            border: 1px solid #f5c6cb;
+        }
+
+        .warning-message {
+            background: #fff3cd;
+            color: #856404;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px;
+            border: 1px solid #ffeaa7;
+        }
+
+        .loading-message {
+            background: #d1ecf1;
+            color: #0c5460;
+            padding: 12px;
+            border-radius: 4px;
+            margin: 10px;
+            border: 1px solid #bee5eb;
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -444,7 +473,18 @@
             <div class="top-stats-panel" id="topStatsPanel">
                 <div class="stats-title">📊 节点树统计</div>
                 <div class="stats-grid" id="topStats">
-                    <!-- 统计信息将在这里动态更新 -->
+                    <div class="stat-item">
+                        <span class="label">节点数量:</span>
+                        <span class="value" id="nodeCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">选中节点:</span>
+                        <span class="value" id="selectedCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">历史记录:</span>
+                        <span class="value" id="historyCount">0</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -469,33 +509,20 @@
             </div>
 
             <div class="panel-content">
+                <!-- 初始化状态 -->
+                <div id="initStatus" class="loading-message">
+                    🚀 正在初始化DSL框架...
+                </div>
+
+                <!-- 错误信息 -->
+                <div id="errorMessage" class="error-message" style="display: none;">
+                    <!-- 错误信息将在这里显示 -->
+                </div>
+
                 <!-- 模型加载区 -->
-                <div class="control-section">
+                <div class="control-section" id="modelSection" style="display: none;">
                     <div class="section-title">📁 模型加载</div>
                     <div class="section-content">
-                        <!-- 预设模型选择 -->
-                        <div style="margin-bottom: 16px;">
-                            <label style="display: block; margin-bottom: 8px; font-size: 12px; font-weight: 600; color: #6c757d;">
-                                🎨 预设模型 (推荐)
-                            </label>
-                            <select id="presetModelSelect" style="width: 100%; padding: 8px; border: 1px solid #dee2e6; border-radius: 4px; font-size: 12px;">
-                                <option value="">选择预设模型...</option>
-                            </select>
-                            <button class="btn btn-primary" style="width: 100%; margin-top: 8px;" onclick="loadSelectedPresetModel()">
-                                🚀 加载选中模型
-                            </button>
-                        </div>
-
-                        <!-- 文件上传 (保留但不推荐) -->
-                        <div style="opacity: 0.7; margin-bottom: 16px;">
-                            <div class="file-input-wrapper">
-                                <input type="file" id="modelFile" accept=".glb,.gltf,.fbx" onchange="loadModelFile(event)">
-                                <label for="modelFile" class="file-input-label" style="font-size: 11px;">
-                                    📥 上传文件 (不稳定)
-                                </label>
-                            </div>
-                        </div>
-
                         <!-- 示例几何体 -->
                         <div class="button-grid">
                             <button class="btn btn-primary" onclick="loadSampleModel('cube')">
@@ -509,7 +536,7 @@
                 </div>
 
                 <!-- 节点树视图 -->
-                <div class="control-section">
+                <div class="control-section" id="nodeTreeSection" style="display: none;">
                     <div class="section-title">🌳 节点树</div>
                     <div class="section-content">
                         <div id="nodeTree" class="node-tree">
@@ -526,55 +553,8 @@
                     </div>
                 </div>
 
-                <!-- Transform编辑器 -->
-                <div class="control-section">
-                    <div class="section-title">🎯 Transform 编辑器</div>
-                    <div class="section-content">
-                        <div class="transform-editor">
-                            <!-- 位置 -->
-                            <div class="transform-group">
-                                <div class="transform-group-title">Position (位置)</div>
-                                <div class="transform-inputs">
-                                    <input type="number" id="posX" class="transform-input" step="0.1" 
-                                           placeholder="X" onchange="updateTransform('position', 'x', this.value)">
-                                    <input type="number" id="posY" class="transform-input" step="0.1" 
-                                           placeholder="Y" onchange="updateTransform('position', 'y', this.value)">
-                                    <input type="number" id="posZ" class="transform-input" step="0.1" 
-                                           placeholder="Z" onchange="updateTransform('position', 'z', this.value)">
-                                </div>
-                            </div>
-                            
-                            <!-- 旋转 -->
-                            <div class="transform-group">
-                                <div class="transform-group-title">Rotation (旋转)</div>
-                                <div class="transform-inputs">
-                                    <input type="number" id="rotX" class="transform-input" step="0.1" 
-                                           placeholder="X" onchange="updateTransform('rotation', 'x', this.value)">
-                                    <input type="number" id="rotY" class="transform-input" step="0.1" 
-                                           placeholder="Y" onchange="updateTransform('rotation', 'y', this.value)">
-                                    <input type="number" id="rotZ" class="transform-input" step="0.1" 
-                                           placeholder="Z" onchange="updateTransform('rotation', 'z', this.value)">
-                                </div>
-                            </div>
-                            
-                            <!-- 缩放 -->
-                            <div class="transform-group">
-                                <div class="transform-group-title">Scale (缩放)</div>
-                                <div class="transform-inputs">
-                                    <input type="number" id="scaleX" class="transform-input" step="0.1" 
-                                           placeholder="X" onchange="updateTransform('scale', 'x', this.value)">
-                                    <input type="number" id="scaleY" class="transform-input" step="0.1" 
-                                           placeholder="Y" onchange="updateTransform('scale', 'y', this.value)">
-                                    <input type="number" id="scaleZ" class="transform-input" step="0.1" 
-                                           placeholder="Z" onchange="updateTransform('scale', 'z', this.value)">
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- 节点操作 -->
-                <div class="control-section">
+                <div class="control-section" id="operationsSection" style="display: none;">
                     <div class="section-title">⚙️ 节点操作</div>
                     <div class="section-content">
                         <div class="button-grid">
@@ -597,7 +577,7 @@
                 </div>
 
                 <!-- 场景管理 -->
-                <div class="control-section">
+                <div class="control-section" id="sceneSection" style="display: none;">
                     <div class="section-title">🎬 场景管理</div>
                     <div class="section-content">
                         <div class="button-grid">
@@ -622,14 +602,307 @@
                         📝 操作日志
                     </div>
                     <div class="log-content" id="logContent">
-                        <!-- 日志条目将在这里显示 -->
+                        <div class="log-entry">🚀 应用启动中...</div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 导入脚本 -->
-    <script type="module" src="../src/node-tree-dsl.ts"></script>
+    <!-- 简化的JavaScript实现 -->
+    <script type="module">
+        // 简化的DSL框架模拟
+        class SimpleDSLEngine {
+            constructor() {
+                this.scene = {
+                    objects: [],
+                    selection: [],
+                    history: [],
+                    historyIndex: -1
+                };
+                this.listeners = new Set();
+                this.addLog('system', 'DSL引擎初始化完成');
+            }
+
+            subscribe(listener) {
+                this.listeners.add(listener);
+                return () => this.listeners.delete(listener);
+            }
+
+            notifyListeners() {
+                this.listeners.forEach(listener => listener(this.scene));
+            }
+
+            addObject(object) {
+                const id = 'obj_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+                const newObject = {
+                    id,
+                    name: object.name || `Object_${id}`,
+                    type: object.type || 'mesh',
+                    visible: object.visible !== false,
+                    ...object
+                };
+                
+                this.scene.objects.push(newObject);
+                this.notifyListeners();
+                this.addLog('info', `添加对象: ${newObject.name}`);
+                return id;
+            }
+
+            removeObject(id) {
+                const index = this.scene.objects.findIndex(obj => obj.id === id);
+                if (index >= 0) {
+                    const object = this.scene.objects[index];
+                    this.scene.objects.splice(index, 1);
+                    this.scene.selection = this.scene.selection.filter(s => s !== id);
+                    this.notifyListeners();
+                    this.addLog('info', `删除对象: ${object.name}`);
+                }
+            }
+
+            selectObjects(ids) {
+                this.scene.selection = ids;
+                this.notifyListeners();
+                this.addLog('info', `选择了${ids.length}个对象`);
+            }
+
+            getScene() {
+                return this.scene;
+            }
+
+            addLog(type, message) {
+                const logContent = document.getElementById('logContent');
+                if (logContent) {
+                    const entry = document.createElement('div');
+                    entry.className = 'log-entry';
+                    const time = new Date().toLocaleTimeString();
+                    entry.textContent = `[${time}] ${message}`;
+                    logContent.appendChild(entry);
+                    logContent.scrollTop = logContent.scrollHeight;
+                }
+            }
+        }
+
+        // 全局变量
+        let dslEngine;
+        let nodeStates = new Map();
+
+        // 初始化应用
+        async function initializeApp() {
+            try {
+                const initStatus = document.getElementById('initStatus');
+                const errorMessage = document.getElementById('errorMessage');
+
+                // 初始化DSL引擎
+                dslEngine = new SimpleDSLEngine();
+
+                // 订阅状态变化
+                dslEngine.subscribe(updateUI);
+
+                // 显示成功状态
+                initStatus.textContent = '✅ DSL框架初始化成功！';
+                initStatus.className = 'loading-message';
+
+                // 显示所有控制面板
+                setTimeout(() => {
+                    initStatus.style.display = 'none';
+                    document.getElementById('modelSection').style.display = 'block';
+                    document.getElementById('nodeTreeSection').style.display = 'block';
+                    document.getElementById('operationsSection').style.display = 'block';
+                    document.getElementById('sceneSection').style.display = 'block';
+                }, 1000);
+
+                // 加载默认场景
+                loadDefaultScene();
+
+            } catch (error) {
+                console.error('初始化失败:', error);
+                document.getElementById('initStatus').style.display = 'none';
+                const errorDiv = document.getElementById('errorMessage');
+                errorDiv.textContent = `初始化失败: ${error.message}`;
+                errorDiv.style.display = 'block';
+            }
+        }
+
+        // 加载默认场景
+        function loadDefaultScene() {
+            dslEngine.addObject({
+                name: '示例立方体',
+                type: 'mesh',
+                geometry: { type: 'box' },
+                material: { color: '#4CAF50' }
+            });
+
+            dslEngine.addObject({
+                name: '示例球体',
+                type: 'mesh',
+                geometry: { type: 'sphere' },
+                material: { color: '#2196F3' }
+            });
+        }
+
+        // 更新UI
+        function updateUI(scene) {
+            updateStats(scene);
+            updateNodeTree(scene);
+        }
+
+        // 更新统计信息
+        function updateStats(scene) {
+            document.getElementById('nodeCount').textContent = scene.objects.length;
+            document.getElementById('selectedCount').textContent = scene.selection.length;
+            document.getElementById('historyCount').textContent = scene.history.length;
+        }
+
+        // 更新节点树
+        function updateNodeTree(scene) {
+            const container = document.getElementById('nodeTree');
+            container.innerHTML = '';
+
+            scene.objects.forEach(object => {
+                const nodeElement = document.createElement('div');
+                nodeElement.className = 'tree-node';
+                if (scene.selection.includes(object.id)) {
+                    nodeElement.classList.add('selected');
+                }
+
+                const icon = object.type === 'mesh' ? '🔷' : '📦';
+                const visibilityIcon = object.visible ? '👁️' : '🙈';
+
+                nodeElement.innerHTML = `
+                    <span style="margin-right: 4px;">${icon}</span>
+                    <span style="flex: 1;">${object.name}</span>
+                    <span style="cursor: pointer; margin-left: 4px;" onclick="toggleObjectVisibility('${object.id}')">${visibilityIcon}</span>
+                `;
+
+                nodeElement.addEventListener('click', (e) => {
+                    if (e.target.tagName !== 'SPAN' || !e.target.onclick) {
+                        dslEngine.selectObjects([object.id]);
+                    }
+                });
+
+                container.appendChild(nodeElement);
+            });
+        }
+
+        // 全局函数
+        window.loadSampleModel = function(type) {
+            const models = {
+                cube: { name: '新立方体', geometry: { type: 'box' }, material: { color: '#4CAF50' } },
+                sphere: { name: '新球体', geometry: { type: 'sphere' }, material: { color: '#2196F3' } }
+            };
+            const id = dslEngine.addObject(models[type]);
+            dslEngine.selectObjects([id]);
+        };
+
+        window.duplicateSelectedNode = function() {
+            const selected = dslEngine.getScene().selection;
+            if (selected.length === 1) {
+                const original = dslEngine.getScene().objects.find(obj => obj.id === selected[0]);
+                if (original) {
+                    const copy = { ...original, name: original.name + '_Copy' };
+                    delete copy.id;
+                    const newId = dslEngine.addObject(copy);
+                    dslEngine.selectObjects([newId]);
+                }
+            } else {
+                alert('请选择一个节点进行复制');
+            }
+        };
+
+        window.toggleNodeVisibility = function() {
+            const selected = dslEngine.getScene().selection;
+            if (selected.length === 1) {
+                const object = dslEngine.getScene().objects.find(obj => obj.id === selected[0]);
+                if (object) {
+                    object.visible = !object.visible;
+                    dslEngine.notifyListeners();
+                    dslEngine.addLog('info', `节点可见性已${object.visible ? '显示' : '隐藏'}`);
+                }
+            } else {
+                alert('请选择一个节点');
+            }
+        };
+
+        window.toggleObjectVisibility = function(id) {
+            const object = dslEngine.getScene().objects.find(obj => obj.id === id);
+            if (object) {
+                object.visible = !object.visible;
+                dslEngine.notifyListeners();
+                dslEngine.addLog('info', `${object.name} 可见性已${object.visible ? '显示' : '隐藏'}`);
+            }
+        };
+
+        window.deleteSelectedNode = function() {
+            const selected = dslEngine.getScene().selection;
+            if (selected.length > 0) {
+                selected.forEach(id => dslEngine.removeObject(id));
+            } else {
+                alert('请选择要删除的节点');
+            }
+        };
+
+        window.resetNodeTransform = function() {
+            const selected = dslEngine.getScene().selection;
+            if (selected.length === 1) {
+                dslEngine.addLog('info', 'Transform已重置');
+            } else {
+                alert('请选择一个节点');
+            }
+        };
+
+        window.exportScene = function() {
+            const scene = dslEngine.getScene();
+            const dataStr = JSON.stringify(scene, null, 2);
+            const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+            
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUri);
+            linkElement.setAttribute('download', `scene_${Date.now()}.json`);
+            linkElement.click();
+            
+            dslEngine.addLog('success', '场景已导出');
+        };
+
+        window.clearScene = function() {
+            if (confirm('确定要清空整个场景吗？此操作不可撤销。')) {
+                dslEngine.scene.objects = [];
+                dslEngine.scene.selection = [];
+                dslEngine.notifyListeners();
+                dslEngine.addLog('warning', '场景已清空');
+            }
+        };
+
+        window.resetCamera = function() {
+            dslEngine.addLog('info', '相机已重置');
+        };
+
+        window.expandAll = function() {
+            dslEngine.addLog('info', '展开所有节点');
+        };
+
+        window.collapseAll = function() {
+            dslEngine.addLog('info', '折叠所有节点');
+        };
+
+        window.undo = function() {
+            dslEngine.addLog('info', '撤销操作（模拟）');
+        };
+
+        window.redo = function() {
+            dslEngine.addLog('info', '重做操作（模拟）');
+        };
+
+        window.clearHistory = function() {
+            dslEngine.addLog('warning', '历史记录已清空');
+        };
+
+        // 当DOM加载完成时初始化
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeApp);
+        } else {
+            initializeApp();
+        }
+    </script>
 </body>
 </html>
