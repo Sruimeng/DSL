@@ -1,5 +1,5 @@
 // ThreeJS渲染器 - 监听DSL状态变化并自动同步到ThreeJS场景
-import type { BufferGeometry, Camera, Light, Material } from 'three';
+import type { BufferGeometry, Camera, Light, Material, Scene, WebGLRenderer } from 'three';
 import {
   ACESFilmicToneMapping,
   AmbientLight,
@@ -18,10 +18,8 @@ import {
   PlaneGeometry,
   PointLight,
   SRGBColorSpace,
-  Scene,
   SphereGeometry,
   SpotLight,
-  WebGLRenderer,
 } from 'three';
 import type { DSLEngine } from './engine';
 import {
@@ -45,38 +43,32 @@ export class DSLRenderer {
   private lightMap = new Map<string, Light>();
 
   // 控制器
-  private controls?: any;
-  private animationId?: number;
+  private controls?: unknown;
 
-  constructor(canvas: HTMLCanvasElement, engine: DSLEngine) {
+  constructor(r3fContext: any, engine: DSLEngine) {
     this.engine = engine;
-    this.setupThreeJS(canvas);
+    this.setupThreeJS(r3fContext);
     this.setupSceneSync();
-    this.startRenderLoop();
   }
 
-  private setupThreeJS(canvas: HTMLCanvasElement) {
-    // 创建基础对象
-    this.scene = new Scene();
-    this.camera = new PerspectiveCamera(75, 1, 0.1, 1000);
-    this.renderer = new WebGLRenderer({
-      canvas,
-      antialias: true,
-      alpha: true,
-    });
+  private setupThreeJS(r3fContext: any) {
+    // 从r3f获取ThreeJS对象
+    this.scene = r3fContext.scene;
+    this.camera = r3fContext.camera;
+    this.renderer = r3fContext.gl;
 
     // 基础设置
-    this.renderer.setSize(canvas.clientWidth, canvas.clientHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = PCFSoftShadowMap;
     this.renderer.outputColorSpace = SRGBColorSpace;
     this.renderer.toneMapping = ACESFilmicToneMapping;
     this.renderer.toneMappingExposure = 1;
 
-    // 设置初始相机位置
-    this.camera.position.set(5, 5, 5);
-    this.camera.lookAt(0, 0, 0);
+    // 设置初始相机位置（如果还没有设置）
+    if (this.camera.position.length() === 0) {
+      this.camera.position.set(5, 5, 5);
+      this.camera.lookAt(0, 0, 0);
+    }
   }
 
   private setupSceneSync() {
@@ -602,20 +594,6 @@ export class DSLRenderer {
     return this.createThreeMaterial(material as MaterialInline);
   }
 
-  // 开始渲染循环
-  private startRenderLoop() {
-    const animate = () => {
-      this.animationId = requestAnimationFrame(animate);
-      this.render();
-    };
-    animate();
-  }
-
-  // 渲染
-  private render() {
-    this.renderer.render(this.scene, this.camera);
-  }
-
   // 公共方法
   resize(width: number, height: number) {
     this.renderer.setSize(width, height);
@@ -666,11 +644,6 @@ export class DSLRenderer {
 
   // 销毁渲染器
   dispose() {
-    // 停止渲染循环
-    if (this.animationId) {
-      cancelAnimationFrame(this.animationId);
-    }
-
     // 清理所有对象
     this.objectMap.forEach((obj) => this.disposeObject(obj));
     this.objectMap.clear();
