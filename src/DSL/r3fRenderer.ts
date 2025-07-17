@@ -21,6 +21,7 @@ import {
   SphereGeometry,
   SpotLight,
 } from 'three';
+import type { OrbitControls } from 'three/examples/jsm/Addons.js';
 import type { DSLEngine } from './engine';
 import {
   type DSLCamera,
@@ -30,6 +31,12 @@ import {
   type MaterialInline,
   type SceneObject,
 } from './types';
+
+export interface R3FContext {
+  gl: WebGLRenderer;
+  scene: Scene;
+  camera: Camera;
+}
 
 export class DSLRenderer {
   private scene!: Scene;
@@ -43,15 +50,15 @@ export class DSLRenderer {
   private lightMap = new Map<string, Light>();
 
   // 控制器
-  private controls?: unknown;
+  private controls?: OrbitControls;
 
-  constructor(r3fContext: any, engine: DSLEngine) {
+  constructor(r3fContext: R3FContext, engine: DSLEngine) {
     this.engine = engine;
     this.setupThreeJS(r3fContext);
     this.setupSceneSync();
   }
 
-  private setupThreeJS(r3fContext: any) {
+  private setupThreeJS(r3fContext: R3FContext) {
     // 从r3f获取ThreeJS对象
     this.scene = r3fContext.scene;
     this.camera = r3fContext.camera;
