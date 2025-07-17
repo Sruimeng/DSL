@@ -1,15 +1,16 @@
-// DSL引擎核心实现 - 框架无关的状态管理引擎
+// DSL引擎核心实现
 import { Vector3 } from 'three';
 import { generateUUID } from 'three/src/math/MathUtils.js';
 import {
   ActionTypes,
   type DSLAction,
+  type DSLLight,
   type DSLScene,
   type Environment,
-  type Light,
   type MaterialInline,
   type SceneObject,
-} from '../types';
+} from './types';
+import { DSLDeepClone, createDefaultScene } from './util';
 
 /**
  * 历史记录条目
@@ -22,130 +23,6 @@ interface HistoryEntry {
 }
 
 /**
- * 深度克隆，保持Three.js对象类型
- */
-function deepClone(obj: any): any {
-  if (obj === null || typeof obj !== 'object') {
-    return obj;
-  }
-
-  if (obj instanceof Vector3) {
-    return new Vector3(obj.x, obj.y, obj.z);
-  }
-
-  if (obj instanceof Date) {
-    return new Date(obj.getTime());
-  }
-
-  if (Array.isArray(obj)) {
-    return obj.map((item) => deepClone(item));
-  }
-
-  const cloned: any = {};
-  for (const key in obj) {
-    if (Object.prototype.hasOwnProperty.call(obj, key)) {
-      cloned[key] = deepClone(obj[key]);
-    }
-  }
-
-  return cloned;
-}
-
-/**
- * 创建默认场景
- */
-function createDefaultScene(partial?: Partial<DSLScene>): DSLScene {
-  const now = Date.now();
-
-  return {
-    id: generateUUID(),
-    name: 'Untitled Scene',
-    objects: [],
-    materials: [
-      {
-        id: 'default',
-        name: 'Default Material',
-        type: 'standard',
-        color: '#ffffff',
-        metalness: 0,
-        roughness: 0.5,
-        opacity: 1,
-      },
-    ],
-    lights: [
-      {
-        id: 'ambient-light',
-        type: 'ambient',
-        name: 'Ambient Light',
-        color: '#404040',
-        intensity: 0.4,
-      },
-      {
-        id: 'directional-light',
-        type: 'directional',
-        name: 'Directional Light',
-        color: '#ffffff',
-        intensity: 0.8,
-        position: new Vector3(5, 10, 5),
-        target: new Vector3(0, 0, 0),
-        castShadow: true,
-      },
-    ],
-    camera: {
-      type: 'perspective',
-      position: new Vector3(5, 5, 5),
-      target: new Vector3(0, 0, 0),
-      fov: 75,
-      near: 0.1,
-      far: 1000,
-    },
-    environment: {
-      background: { type: 'color', color: '#f0f0f0' },
-    },
-    selection: [],
-    metadata: {
-      version: '1.0.0',
-      created: now,
-      modified: now,
-    },
-    ...partial,
-  };
-}
-
-/**
- * 计算对象大小（用于内存统计）
- */
-function calculateObjectSize(obj: any): number {
-  const seen = new WeakSet();
-
-  function getSize(obj: any): number {
-    if (obj === null || obj === undefined) return 0;
-    if (typeof obj === 'boolean') return 4;
-    if (typeof obj === 'number') return 8;
-    if (typeof obj === 'string') return obj.length * 2;
-
-    if (typeof obj === 'object') {
-      if (seen.has(obj)) return 0;
-      seen.add(obj);
-
-      let size = 0;
-      if (Array.isArray(obj)) {
-        size = obj.reduce((acc, item) => acc + getSize(item), 0);
-      } else {
-        size = Object.keys(obj).reduce((acc, key) => {
-          return acc + key.length * 2 + getSize(obj[key]);
-        }, 0);
-      }
-      return size;
-    }
-
-    return 0;
-  }
-
-  return getSize(obj);
-}
-
-/**
  * DSL引擎类 - 使用改进的状态快照式undo/redo系统
  */
 export class DSLEngine {
@@ -155,7 +32,7 @@ export class DSLEngine {
   // 改进的历史记录系统
   private actionHistory: HistoryEntry[] = [];
   private historyIndex = -1;
-  private maxHistorySize = 50; // 减少内存占用
+  private maxHistorySize = 150; // 减少内存占用
   private isUndoRedoing = false; // 防止undo/redo操作被记录到历史
 
   constructor(initialScene?: Partial<DSLScene>) {
@@ -172,11 +49,11 @@ export class DSLEngine {
   }
 
   /**
-   * 执行Action - 改进版本，使用状态快照
+   * 执行Action
    */
   dispatch(action: DSLAction): void {
     // 记录执行前的状态（深拷贝）
-    const beforeState = !this.isUndoRedoing ? deepClone(this.scene) : null;
+    const beforeState = !this.isUndoRedoing ? DSLDeepClone(this.scene) : null;
 
     // 执行action
     const newScene = this.reduce(this.scene, action);
@@ -409,7 +286,7 @@ export class DSLEngine {
 
       case 'ADD_LIGHT': {
         const lightId = action.payload.id || generateUUID();
-        const light: Light = {
+        const light: DSLLight = {
           id: lightId,
           name: action.payload.name || `Light_${lightId}`,
           type: action.payload.type || 'directional',
@@ -523,7 +400,7 @@ export class DSLEngine {
   }
 
   /**
-   * 保存Action到历史记录 - 使用状态快照
+   * 保存Action到历史记录
    */
   private saveActionToHistory(
     action: DSLAction,
@@ -539,7 +416,7 @@ export class DSLEngine {
     const entry: HistoryEntry = {
       action,
       beforeState,
-      afterState: deepClone(afterState),
+      afterState: DSLDeepClone(afterState),
       timestamp: Date.now(),
     };
 
@@ -551,12 +428,6 @@ export class DSLEngine {
       this.actionHistory.shift();
       this.historyIndex--;
     }
-
-    console.log('💾 Action已保存到历史:', {
-      action: action.type,
-      historyLength: this.actionHistory.length,
-      currentIndex: this.historyIndex,
-    });
   }
 
   /**
@@ -564,7 +435,6 @@ export class DSLEngine {
    */
   undo(): boolean {
     if (!this.canUndo()) {
-      console.log('⚠️ 无法撤销：没有可撤销的操作');
       return false;
     }
 
@@ -575,18 +445,10 @@ export class DSLEngine {
     this.isUndoRedoing = true;
 
     // 直接恢复到执行action前的状态
-    this.scene = deepClone(entry.beforeState);
+    this.scene = DSLDeepClone(entry.beforeState);
     this.notifyListeners();
 
     this.isUndoRedoing = false;
-
-    console.log('↶ 撤销成功:', {
-      action: entry.action.type,
-      timestamp: new Date(entry.timestamp).toLocaleTimeString(),
-      currentIndex: this.historyIndex,
-      canUndo: this.canUndo(),
-      canRedo: this.canRedo(),
-    });
 
     return true;
   }
@@ -602,24 +464,15 @@ export class DSLEngine {
 
     this.historyIndex++;
     const entry = this.actionHistory[this.historyIndex];
-    console.log('🔄 重做操作=====:', entry);
 
     // 标记为undo/redo操作，防止递归记录
     this.isUndoRedoing = true;
 
     // 直接恢复到执行action后的状态
-    this.scene = deepClone(entry.afterState);
+    this.scene = DSLDeepClone(entry.afterState);
     this.notifyListeners();
 
     this.isUndoRedoing = false;
-
-    console.log('↷ 重做成功:', {
-      action: entry.action.type,
-      timestamp: new Date(entry.timestamp).toLocaleTimeString(),
-      currentIndex: this.historyIndex,
-      canUndo: this.canUndo(),
-      canRedo: this.canRedo(),
-    });
 
     return true;
   }
@@ -642,11 +495,6 @@ export class DSLEngine {
    * 获取历史统计信息
    */
   getHistoryStats() {
-    const totalMemoryKB =
-      this.actionHistory.reduce((acc, entry) => {
-        return acc + calculateObjectSize(entry.beforeState) + calculateObjectSize(entry.afterState);
-      }, 0) / 1024;
-
     const recentActions = this.actionHistory.slice(-5).map((entry) => ({
       type: entry.action.type,
       timestamp: entry.timestamp,
@@ -656,7 +504,6 @@ export class DSLEngine {
       totalActions: this.actionHistory.length,
       currentIndex: this.historyIndex,
       maxSize: this.maxHistorySize,
-      memoryUsageKB: Math.round(totalMemoryKB),
       canUndo: this.canUndo(),
       canRedo: this.canRedo(),
       recentActions,
@@ -668,7 +515,6 @@ export class DSLEngine {
     this.listeners.forEach((listener) => listener(this.scene));
   }
 
-  // === 便利方法 ===
   addObject(object: Partial<SceneObject>): string {
     const id = object.id || generateUUID();
     this.dispatch({ type: ActionTypes.ADD_OBJECT, payload: { ...object, id } });
@@ -705,7 +551,6 @@ export class DSLEngine {
     this.dispatch({ type: ActionTypes.UPDATE_ENVIRONMENT, payload: changes });
   }
 
-  // === 查询方法 ===
   getObject(id: string): SceneObject | null {
     return this.scene.objects.find((obj) => obj.id === id) || null;
   }
@@ -721,7 +566,7 @@ export class DSLEngine {
 
   // 导出完整场景
   exportScene(): DSLScene {
-    return deepClone(this.scene);
+    return DSLDeepClone(this.scene);
   }
 
   // 导入场景

@@ -1,6 +1,6 @@
 // 节点树DSL演示 - 基于DSL框架的正确实现
+import { DSLRenderer } from '../../src/DSL/r3fRenderer';
 import { modelLoader } from '../../src/engine/loader';
-import { DSLRenderer } from '../../src/engine/renderer';
 import { DSLEngine } from '../../src/index.ts';
 import { ActionTypes } from '../../src/types/core';
 import { LogPanelUI } from './utils/log-panel';

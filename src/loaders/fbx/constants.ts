@@ -709,6 +709,7 @@ export enum LayerElementType {
 }
 
 export interface Global {
+  wireframe?: boolean;
   fbxTree: IFBXTree;
   connections: Map<number, FBXConnectionNode>;
   sceneGraph: Group;
@@ -718,4 +719,5 @@ export const global: Global = {
   fbxTree: {},
   connections: new Map(),
   sceneGraph: new Group(),
+  wireframe: true,
 };

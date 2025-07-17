@@ -155,17 +155,73 @@ export class FBXEdgesGeometry extends BufferGeometry {
         faceNormals[endVertexIndex * 3 + 2],
       );
 
-      // 返回两个顶点法向量的平均值
-      const avgNormal = new Vector3().addVectors(startNormal, endNormal).normalize();
+      // 验证法向量有效性
+      if (startNormal.length() > 0.01 && endNormal.length() > 0.01) {
+        startNormal.normalize();
+        endNormal.normalize();
 
-      // 确保法向量有效
-      if (avgNormal.length() > 0.5) {
-        return avgNormal;
+        // 返回两个顶点法向量的平均值
+        const avgNormal = new Vector3().addVectors(startNormal, endNormal).normalize();
+
+        // 确保平均法向量有效
+        if (avgNormal.length() > 0.5) {
+          return avgNormal;
+        }
       }
     }
 
     // 回退到面法向量计算
-    return this.calculateFaceNormal(facePositions, faceIndices);
+    const faceNormal = this.calculateFaceNormal(facePositions, faceIndices);
+
+    // 如果面法向量也无效，使用边向量计算默认法向量
+    if (faceNormal.length() < 0.5) {
+      return this.calculateEdgeDefaultNormal(facePositions, startVertexIndex, endVertexIndex);
+    }
+
+    return faceNormal;
+  }
+
+  /**
+   * 计算边的默认法向量（基于边向量）
+   */
+  private calculateEdgeDefaultNormal(
+    facePositions: number[],
+    startVertexIndex: number,
+    endVertexIndex: number,
+  ): Vector3 {
+    // 获取边的两个顶点
+    const startX = facePositions[startVertexIndex * 3];
+    const startY = facePositions[startVertexIndex * 3 + 1];
+    const startZ = facePositions[startVertexIndex * 3 + 2];
+
+    const endX = facePositions[endVertexIndex * 3];
+    const endY = facePositions[endVertexIndex * 3 + 1];
+    const endZ = facePositions[endVertexIndex * 3 + 2];
+
+    // 计算边向量
+    const edgeVector = new Vector3(endX - startX, endY - startY, endZ - startZ);
+
+    // 如果边长度太小，返回默认法向量
+    if (edgeVector.length() < 0.001) {
+      return new Vector3(0, 0, 1);
+    }
+
+    edgeVector.normalize();
+
+    // 尝试与Z轴叉积
+    let normal = new Vector3().crossVectors(edgeVector, new Vector3(0, 0, 1));
+
+    // 如果结果太小（边向量接近Z轴），使用X轴
+    if (normal.length() < 0.1) {
+      normal = new Vector3().crossVectors(edgeVector, new Vector3(1, 0, 0));
+    }
+
+    // 如果还是太小，使用Y轴
+    if (normal.length() < 0.1) {
+      normal = new Vector3().crossVectors(edgeVector, new Vector3(0, 1, 0));
+    }
+
+    return normal.normalize();
   }
 
   /**

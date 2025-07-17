@@ -13,6 +13,7 @@ import {
   Color,
   ColorManagement,
   DirectionalLight,
+  DoubleSide,
   EquirectangularReflectionMapping,
   Group,
   Line,
@@ -84,7 +85,6 @@ export class FBXTreeParser {
     const geometryMap = new GeometryParser().parse(deformers);
 
     this.parseScene(deformers, geometryMap, materials);
-
     return global.sceneGraph;
   }
 
@@ -266,6 +266,10 @@ export class FBXTreeParser {
   async parseTexture(textureNode: FBXTextureNode, images: Record<string, string>) {
     const texture = await this.loadTexture(textureNode, images);
 
+    if (!texture) {
+      return;
+    }
+
     (texture as any).ID = textureNode.id;
 
     texture.name = textureNode.attrName;
@@ -300,7 +304,10 @@ export class FBXTreeParser {
   }
 
   // load a texture specified as a blob or data URI, or via an external URL using TextureLoader
-  async loadTexture(textureNode: FBXTextureNode, images: Record<string, string>): Promise<Texture> {
+  async loadTexture(
+    textureNode: FBXTextureNode,
+    images: Record<string, string>,
+  ): Promise<Texture | undefined> {
     const extension = (textureNode.FileName.split('.').pop() || '').toLowerCase();
 
     let loader = this.manager.getHandler(`.${extension}`);
@@ -337,7 +344,13 @@ export class FBXTreeParser {
       return new Texture();
     }
 
-    const texture = await (loader as TextureLoader).loadAsync(fileName);
+    let texture;
+
+    try {
+      texture = await (loader as TextureLoader).loadAsync(fileName);
+    } catch (error) {
+      console.warn('FBXLoader: Error loading texture', fileName, error);
+    }
 
     // revert to initial path
     loader.setPath(loaderPath);
@@ -397,7 +410,7 @@ export class FBXTreeParser {
 
     switch (type.toLowerCase()) {
       case 'phong':
-        material = new MeshStandardMaterial();
+        material = new MeshStandardMaterial({ metalness: 0, roughness: 0.5, side: DoubleSide });
 
         break;
       case 'lambert':
@@ -409,7 +422,7 @@ export class FBXTreeParser {
           'THREE.FBXLoader: unknown material type "%s". Defaulting to MeshStandardMaterial.',
           type,
         );
-        material = new MeshStandardMaterial();
+        material = new MeshStandardMaterial({ metalness: 0, roughness: 0.5, side: DoubleSide });
 
         break;
     }
@@ -904,25 +917,24 @@ export class FBXTreeParser {
           case 'Mesh':
             {
               model = this.createMesh(relationships, geometryMap, materialMap);
-              const material = new TriangleWireframeMaterial({
-                color: 0x000000,
-                lineWidth: 2,
-              });
-              material.userData.wireframe = true;
-              const currentMesh = new Line2(
-                (model as Mesh).geometry.userData.wireframe,
-                material as unknown as LineMaterial,
-              );
-              currentMesh.name = `wireframe_${node.attrName ? PropertyBinding.sanitizeNodeName(node.attrName) : ''}`;
-              currentMesh.visible = false;
-              currentMesh.raycast = () => {};
-              currentMesh.layers.disable(0);
-              currentMesh.layers.enable(1);
-              currentMesh.renderOrder = 2; // 确保线框在其他物体上方渲染
-              model.add(currentMesh);
+              if (global.wireframe) {
+                const material = new TriangleWireframeMaterial();
+                material.userData.wireframe = true;
+                const currentMesh = new Line2(
+                  (model as Mesh).geometry.userData.wireframeGeometry,
+                  material as unknown as LineMaterial,
+                );
+                currentMesh.name = `wireframe_${node.attrName ? PropertyBinding.sanitizeNodeName(node.attrName) : ''}`;
+                currentMesh.visible = false;
+                currentMesh.raycast = () => {};
+                currentMesh.layers.disable(0);
+                currentMesh.layers.enable(1);
+                currentMesh.renderOrder = 2; // 确保线框在其他物体上方渲染
+                model.add(currentMesh);
+                currentMesh.userData.wireframe = true; // 添加一个标志，表示该模型有线框
+              }
               model.renderOrder = 1;
               model.userData.modelInfo = (model as Mesh).geometry.userData.modelInfo || {};
-              currentMesh.userData.wireframe = true; // 添加一个标志，表示该模型有线框
             }
 
             break;
@@ -1380,21 +1392,61 @@ export class FBXTreeParser {
     }
 
     if ('Lcl_Translation' in modelNode) {
-      transformData.translation = modelNode.Lcl_Translation.value;
+      // 如果scale需要从100调整为1，position也需要相应调整
+      const translation = modelNode.Lcl_Translation.value;
+
+      let scaleAdjustmentFactor = 1;
+      if ('Lcl_Scaling' in modelNode) {
+        const scaleX = modelNode.Lcl_Scaling.value[0];
+        const scaleY = modelNode.Lcl_Scaling.value[1];
+        const scaleZ = modelNode.Lcl_Scaling.value[2];
+        if (scaleX === 100 || scaleY === 100 || scaleZ === 100) {
+          scaleAdjustmentFactor = 100;
+        }
+      }
+
+      transformData.translation = [
+        translation[0] / scaleAdjustmentFactor,
+        translation[1] / scaleAdjustmentFactor,
+        translation[2] / scaleAdjustmentFactor,
+      ];
     }
 
     if ('PreRotation' in modelNode) {
-      transformData.preRotation = modelNode.PreRotation.value;
+      // transformData.preRotation = modelNode.PreRotation.value;
+      const value = modelNode.PreRotation.value;
+      transformData.preRotation = [
+        Number(value[0].toFixed(4)),
+        Number(value[1].toFixed(4)),
+        Number(value[2].toFixed(4)),
+      ];
     }
     if ('Lcl_Rotation' in modelNode) {
-      transformData.rotation = modelNode.Lcl_Rotation.value;
+      // transformData.rotation = modelNode.Lcl_Rotation.value;
+      const value = modelNode.Lcl_Rotation.value;
+      transformData.rotation = [
+        Number(value[0].toFixed(4)),
+        Number(value[1].toFixed(4)),
+        Number(value[2].toFixed(4)),
+      ];
     }
     if ('PostRotation' in modelNode) {
-      transformData.postRotation = modelNode.PostRotation.value;
+      // transformData.postRotation = modelNode.PostRotation.value;
+      const value = modelNode.PostRotation.value;
+      transformData.postRotation = [
+        Number(value[0].toFixed(4)),
+        Number(value[1].toFixed(4)),
+        Number(value[2].toFixed(4)),
+      ];
     }
 
     if ('Lcl_Scaling' in modelNode) {
-      transformData.scale = modelNode.Lcl_Scaling.value;
+      // transformData.scale = modelNode.Lcl_Scaling.value;
+      transformData.scale = [
+        modelNode.Lcl_Scaling.value[0] === 100 ? 1 : modelNode.Lcl_Scaling.value[0],
+        modelNode.Lcl_Scaling.value[1] === 100 ? 1 : modelNode.Lcl_Scaling.value[1],
+        modelNode.Lcl_Scaling.value[2] === 100 ? 1 : modelNode.Lcl_Scaling.value[2],
+      ];
     }
 
     if ('ScalingOffset' in modelNode) {
@@ -1434,7 +1486,25 @@ export class FBXTreeParser {
           const lookAtTarget = modelNode[child.ID];
 
           if ('Lcl_Translation' in lookAtTarget) {
-            const pos = lookAtTarget.Lcl_Translation.value;
+            let pos = lookAtTarget.Lcl_Translation.value;
+
+            let scaleAdjustmentFactor = 1;
+            if ('Lcl_Scaling' in lookAtTarget) {
+              const scaleX = lookAtTarget.Lcl_Scaling.value[0];
+              const scaleY = lookAtTarget.Lcl_Scaling.value[1];
+              const scaleZ = lookAtTarget.Lcl_Scaling.value[2];
+
+              if (scaleX === 100 || scaleY === 100 || scaleZ === 100) {
+                scaleAdjustmentFactor = 100;
+              }
+            }
+
+            // 调整position以保持一致性
+            pos = [
+              pos[0] / scaleAdjustmentFactor,
+              pos[1] / scaleAdjustmentFactor,
+              pos[2] / scaleAdjustmentFactor,
+            ];
 
             // DirectionalLight, SpotLight
             if ((model as any).target !== undefined) {

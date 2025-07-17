@@ -217,14 +217,15 @@ export class GeometryParser {
     const geoInfo = this.parseGeoNode(geoNode, skeleton);
     const buffers = this.genBuffers(geoInfo);
     this.modelInfo.vertices = buffers.positionCount;
-
-    // 使用基于三角形的线框几何体，提供更好的线宽控制和深度偏移
-    const wireframe = new FBXEdgesGeometry(
-      buffers.wireframePositions,
-      buffers.wireframeIndices,
-      buffers.wireframeNormals,
-    );
-    geo.userData.wireframe = wireframe;
+    if (global.wireframe) {
+      // 使用基于三角形的线框几何体，提供更好的线宽控制和深度偏移
+      const wireframeGeometry = new FBXEdgesGeometry(
+        buffers.wireframePositions,
+        buffers.wireframeIndices,
+        buffers.wireframeNormals,
+      );
+      geo.userData.wireframeGeometry = wireframeGeometry;
+    }
     geo.userData.modelInfo = { ...this.modelInfo };
     this.modelInfo = {
       triangles: 0,

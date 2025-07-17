@@ -1,7 +1,7 @@
 import {
   Color,
   DoubleSide,
-  NoBlending,
+  LessEqualDepth,
   ShaderMaterial,
   UniformsLib,
   UniformsUtils,
@@ -10,12 +10,16 @@ import {
 
 // 创建线框专用的 uniforms
 const WireframeUniforms = {
-  linewidth: { value: 1 },
-  resolution: { value: new Vector2(1, 1) },
-  wireframeColor: { value: new Color(0x000000) },
-  wireframeOpacity: { value: 1.0 },
-  normalOffset: { value: 0.001 }, // 法线偏移距离
-  // debugMode: { value: 0 }, // 调试模式：0=正常，1=显示法线方向
+  linewidth: { value: 1 }, // 线宽
+  resolution: { value: new Vector2(1, 1) }, // 分辨率
+  wireframeColor: { value: new Color(0x000000) }, // 线框颜色
+  wireframeOpacity: { value: 1.0 }, // 线框透明度
+  normalOffset: { value: 0.008 }, // 固定偏移量
+  depthBias: { value: -0.0001 }, // 深度偏移
+  minAlpha: { value: 0.3 }, // 最小alpha值
+  edgeThreshold: { value: 0.8 }, // 抗锯齿阈值
+  distanceFadeStart: { value: 10.0 }, // 距离渐变开始距离
+  distanceFadeEnd: { value: 50.0 }, // 距离渐变结束距离
 };
 
 /**
@@ -28,17 +32,37 @@ export class TriangleWireframeMaterial extends ShaderMaterial {
       lineWidth?: number;
       opacity?: number;
       normalOffset?: number;
+      depthBias?: number;
+      minAlpha?: number;
+      edgeThreshold?: number;
+      distanceFadeStart?: number;
+      distanceFadeEnd?: number;
     } = {},
   ) {
-    const { color = 0x000000, lineWidth = 2.0, opacity = 1.0, normalOffset = 0.0 } = options;
+    const {
+      color = 0x000000, // 线框颜色
+      lineWidth = 1.0, // 线框宽度
+      opacity = 0.4, // 线框透明度
+      normalOffset = 0, // 法线偏移量
+      depthBias = -0.0002, // 深度偏移量
+      minAlpha = 0.1, // 最小透明度
+      edgeThreshold = 0.75, // 边缘阈值
+      distanceFadeStart = 1.0, // 距离渐变开始
+      distanceFadeEnd = 5.0, // 距离渐变结束
+    } = options;
 
-    const uniforms = UniformsUtils.merge([UniformsLib.common, UniformsLib.fog, WireframeUniforms]);
+    const uniforms = UniformsUtils.merge([UniformsLib.common, WireframeUniforms]);
 
-    // 设置初始 uniform 值
+    // 设置初始uniform值
     uniforms.wireframeColor.value = new Color(color);
     uniforms.linewidth.value = lineWidth;
     uniforms.wireframeOpacity.value = opacity;
     uniforms.normalOffset.value = normalOffset;
+    uniforms.depthBias.value = depthBias;
+    uniforms.minAlpha.value = minAlpha;
+    uniforms.edgeThreshold.value = edgeThreshold;
+    uniforms.distanceFadeStart.value = distanceFadeStart;
+    uniforms.distanceFadeEnd.value = distanceFadeEnd;
 
     super({
       uniforms: uniforms,
@@ -53,14 +77,18 @@ export class TriangleWireframeMaterial extends ShaderMaterial {
         uniform float linewidth;
         uniform vec2 resolution;
         uniform float normalOffset;
+        uniform float depthBias;
 
         attribute vec3 instanceStart;
         attribute vec3 instanceEnd;
-        attribute vec3 instanceNormal; // 面法线
+        attribute vec3 instanceNormal;
 
         varying vec2 vUv;
-
-        varying vec3 vNormal; // 传递法线到片段着色器用于调试
+        varying vec3 vNormal;
+        varying float vViewZ;
+        varying float vLineWidth;
+        varying float vLineLength;
+        varying float vDistance; // 距离摄像机的距离
 
         void trimSegment(const in vec4 start, inout vec4 end) {
           float a = projectionMatrix[2][2];
@@ -73,18 +101,37 @@ export class TriangleWireframeMaterial extends ShaderMaterial {
         void main() {
           float aspect = resolution.x / resolution.y;
 
-          // 确保法线单位化
-          vec3 normal = normalize(instanceNormal);
+          // 确保法线单位化并验证有效性
+          vec3 normal = instanceNormal;
+          float normalLength = length(normal);
+          if (normalLength > 0.01) {
+            normal = normal / normalLength;
+          } else {
+            // 如果法向量无效，计算线段的默认法向量
+            vec3 lineDir = normalize(instanceEnd - instanceStart);
+            normal = normalize(cross(lineDir, vec3(0.0, 0.0, 1.0)));
+            if (length(normal) < 0.1) {
+              normal = normalize(cross(lineDir, vec3(1.0, 0.0, 0.0)));
+            }
+          }
           vNormal = normal;
 
           // 沿法线方向偏移，让线框稍微偏离表面
           vec3 offsetStart = instanceStart + normal * normalOffset;
           vec3 offsetEnd = instanceEnd + normal * normalOffset;
 
-          // 摄像机空间中的线段端点（使用偏移后的位置）
+          // 计算线段长度，用于一致性处理
+          float lineLength = length(instanceEnd - instanceStart);
+          vLineLength = lineLength;
+
+          // 摄像机空间中的线段端点
           vec4 start = modelViewMatrix * vec4(offsetStart, 1.0);
           vec4 end = modelViewMatrix * vec4(offsetEnd, 1.0);
 
+          // 记录视图空间Z坐标和距离
+          vViewZ = -(start.z + end.z) * 0.5;
+          vDistance = length((start.xyz + end.xyz) * 0.5); // 线段中点到摄像机的距离
+          
           vUv = uv;
 
           // 透视投影特殊处理
@@ -102,65 +149,51 @@ export class TriangleWireframeMaterial extends ShaderMaterial {
           vec4 clipStart = projectionMatrix * start;
           vec4 clipEnd = projectionMatrix * end;
 
-          // NDC 空间
+          // NDC空间
           vec3 ndcStart = clipStart.xyz / clipStart.w;
           vec3 ndcEnd = clipEnd.xyz / clipEnd.w;
 
-          // 线段方向
+          // 计算线段方向
           vec2 dir = ndcEnd.xy - ndcStart.xy;
+          
+          // 处理零长度线段
+          if (length(dir) < 0.0001) {
+            dir = vec2(1.0, 0.0);
+          }
+          
           dir.x *= aspect;
           dir = normalize(dir);
 
-          #ifdef WORLD_UNITS
-            // 世界空间单位模式
-            vec3 worldDir = normalize(end.xyz - start.xyz);
-            vec3 tmpFwd = normalize(mix(start.xyz, end.xyz, 0.5));
-            vec3 worldUp = normalize(cross(worldDir, tmpFwd));
-            vec3 worldFwd = cross(worldDir, worldUp);
-            worldPos = position.y < 0.5 ? start : end;
+          // 屏幕空间单位模式
+          vec2 offset = vec2(dir.y, -dir.x);
+          dir.x /= aspect;
+          offset.x /= aspect;
 
-            // 高度偏移
-            float hw = linewidth * 0.5;
-            worldPos.xyz += position.x < 0.0 ? hw * worldUp : -hw * worldUp;
+          // 根据position.x决定线宽方向
+          if (position.x < 0.0) offset *= -1.0;
 
-            // 端点扩展
-            worldPos.xyz += position.y < 0.5 ? -hw * worldDir : hw * worldDir;
-            worldPos.xyz += worldFwd * hw;
+          // 端点扩展 - 减少端点的扩展以避免过度延伸
+          if (position.y < 0.0) {
+            offset += -dir * 0.3;
+          } else if (position.y > 1.0) {
+            offset += dir * 0.3;
+          }
 
-            // 端点处理
-            if (position.y > 1.0 || position.y < 0.0) {
-              worldPos.xyz -= worldFwd * 2.0 * hw;
-            }
+          // 应用线宽
+          float pixelLineWidth = linewidth;
+          offset *= pixelLineWidth;
+          offset /= resolution.y;
 
-            // 投影世界坐标
-            vec4 clip = projectionMatrix * worldPos;
-            vec3 clipPose = (position.y < 0.5) ? ndcStart : ndcEnd;
-            clip.z = clipPose.z * clip.w;
-          #else
-            // 屏幕空间单位模式
-            vec2 offset = vec2(dir.y, -dir.x);
-            dir.x /= aspect;
-            offset.x /= aspect;
+          // 选择起点或终点
+          vec4 clip = (position.y < 0.5) ? clipStart : clipEnd;
+          offset *= clip.w;
+          clip.xy += offset;
 
-            // 根据position.x决定线宽方向 (-1 = 左侧, 1 = 右侧)
-            if (position.x < 0.0) offset *= -1.0;
-
-            // 端点扩展
-            if (position.y < 0.0) {
-              offset += -dir;
-            } else if (position.y > 1.0) {
-              offset += dir;
-            }
-
-            // 应用线宽
-            offset *= linewidth;
-            offset /= resolution.y;
-
-            // 选择起点或终点
-            vec4 clip = (position.y < 0.5) ? clipStart : clipEnd;
-            offset *= clip.w;
-            clip.xy += offset;
-          #endif
+          // 应用深度偏移 - 稍微向前偏移避免Z-fighting
+          clip.z += depthBias * clip.w;
+          
+          // 传递线宽信息到片元着色器
+          vLineWidth = pixelLineWidth;
 
           gl_Position = clip;
 
@@ -176,11 +209,17 @@ export class TriangleWireframeMaterial extends ShaderMaterial {
         uniform vec3 wireframeColor;
         uniform float wireframeOpacity;
         uniform float linewidth;
-        // uniform float debugMode;
+        uniform float minAlpha;
+        uniform float edgeThreshold;
+        uniform float distanceFadeStart;
+        uniform float distanceFadeEnd;
 
         varying vec2 vUv;
-
         varying vec3 vNormal;
+        varying float vViewZ;
+        varying float vLineWidth;
+        varying float vLineLength;
+        varying float vDistance;
 
         #include <common>
         #include <color_pars_fragment>
@@ -188,56 +227,50 @@ export class TriangleWireframeMaterial extends ShaderMaterial {
         #include <logdepthbuf_pars_fragment>
         #include <clipping_planes_pars_fragment>
 
-        vec2 closestLineToLine(vec3 p1, vec3 p2, vec3 p3, vec3 p4) {
-          float mua;
-          float mub;
-
-          vec3 p13 = p1 - p3;
-          vec3 p43 = p4 - p3;
-          vec3 p21 = p2 - p1;
-
-          float d1343 = dot(p13, p43);
-          float d4321 = dot(p43, p21);
-          float d1321 = dot(p13, p21);
-          float d4343 = dot(p43, p43);
-          float d2121 = dot(p21, p21);
-
-          float denom = d2121 * d4343 - d4321 * d4321;
-          float numer = d1343 * d4321 - d1321 * d4343;
-
-          mua = numer / denom;
-          mua = clamp(mua, 0.0, 1.0);
-          mub = (d1343 + d4321 * (mua)) / d4343;
-          mub = clamp(mub, 0.0, 1.0);
-
-          return vec2(mua, mub);
-        }
-
         void main() {
           #include <clipping_planes_fragment>
 
           float alpha = wireframeOpacity;
           vec3 finalColor = wireframeColor;
 
-          // if (debugMode > 0.5) {
-          //   finalColor = abs(vNormal); // 将法线方向映射为颜色
-          // }
+          // 改进的端点处理
+          if (abs(vUv.y) > 1.0) {
+            float a = vUv.x;
+            float b = (vUv.y > 0.0) ? vUv.y - 1.0 : vUv.y + 1.0;
+            float len2 = a * a + b * b;
 
-         // 屏幕空间单位模式：基于UV的抗锯齿
-        if (abs(vUv.y) > 1.0) {
-          float a = vUv.x;
-          float b = (vUv.y > 0.0) ? vUv.y - 1.0 : vUv.y + 1.0;
-          float len2 = a * a + b * b;
+            if (len2 > 1.8) discard;
+            
+            if (len2 > 1.0) {
+              alpha *= 1.0 - smoothstep(1.0, 1.8, len2);
+            }
+          }
 
-          if (len2 > 1.0) discard;
-        }
+          // 抗锯齿算法
+          float edgeAlpha = 1.0;
+          float edgeFactor = abs(vUv.x);
+          
+          if (edgeFactor > edgeThreshold) {
+            edgeAlpha = 1.0 - smoothstep(edgeThreshold, 1.0, edgeFactor);
+          }
+          
+          // 距离渐变透明度 - 核心功能
+          float distanceFactor = 1.0;
+          if (vDistance > distanceFadeStart) {
+            distanceFactor = 1.0 - smoothstep(distanceFadeStart, distanceFadeEnd, vDistance);
+            // 确保最远处有最小可见度
+            distanceFactor = max(distanceFactor, 0.05);
+          }
+          
+          alpha *= edgeAlpha * distanceFactor;
 
-        // 基于UV的抗锯齿
-        float edgeAlpha = 1.0;
-        if (abs(vUv.x) > 0.7) {
-          edgeAlpha = 1.0 - smoothstep(0.7, 1.0, abs(vUv.x));
-        }
-        alpha *= edgeAlpha;
+          // 确保最小可见度
+          alpha = max(alpha, minAlpha * distanceFactor);
+
+          // 线宽相关的alpha调整
+          if (vLineWidth < 1.0) {
+            alpha *= smoothstep(0.1, 1.0, vLineWidth);
+          }
 
           gl_FragColor = vec4(finalColor, alpha);
 
@@ -249,7 +282,10 @@ export class TriangleWireframeMaterial extends ShaderMaterial {
       `,
 
       side: DoubleSide,
-      blending: NoBlending,
+      transparent: true, // 必要，否则alpha混合不工作
+      depthTest: true, // 必要，否则线框会穿透其他物体
+      depthWrite: false, // 必要，否则线框会穿透其他物体
+      depthFunc: LessEqualDepth, // 必要，否则线框会穿透其他物体
     });
   }
 }

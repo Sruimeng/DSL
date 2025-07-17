@@ -52,12 +52,12 @@ export interface MaterialInline {
   metalnessMap?: string;
 }
 
-export type Material = MaterialRef | MaterialInline;
+export type DSLMaterial = MaterialRef | MaterialInline;
 
 // 灯光类型
 export type LightType = 'ambient' | 'directional' | 'point' | 'spot' | 'hemisphere';
 
-export interface Light {
+export interface DSLLight {
   id: string;
   name: string;
   type: LightType;
@@ -74,7 +74,7 @@ export interface Light {
 }
 
 // 相机类型
-export interface Camera {
+export interface DSLCamera {
   type: 'perspective' | 'orthographic';
   position: Vector3;
   target: Vector3;
@@ -96,7 +96,7 @@ export interface SceneObject {
   name: string;
   type: SceneObjectType;
   geometry?: Geometry;
-  material?: Material;
+  material?: DSLMaterial;
   transform: Transform;
   visible?: boolean;
   castShadow?: boolean;
@@ -156,9 +156,9 @@ export interface DSLScene {
   name: string;
   version?: '1.0';
   objects: SceneObject[];
-  materials: Material[];
-  lights: Light[];
-  camera: Camera;
+  materials: DSLMaterial[];
+  lights: DSLLight[];
+  camera: DSLCamera;
   environment: Environment;
   workspace?: WorkspaceData;
   selection: string[];
@@ -277,10 +277,10 @@ export type DSLAction =
   | { type: ActionTypes.CLEAR_SELECTION }
 
   // 环境操作
-  | { type: ActionTypes.UPDATE_CAMERA; payload: Partial<Camera> }
+  | { type: ActionTypes.UPDATE_CAMERA; payload: Partial<DSLCamera> }
   | { type: ActionTypes.UPDATE_ENVIRONMENT; payload: Partial<Environment> }
-  | { type: ActionTypes.ADD_LIGHT; payload: Partial<Light> }
-  | { type: ActionTypes.UPDATE_LIGHT; payload: { id: string; changes: Partial<Light> } }
+  | { type: ActionTypes.ADD_LIGHT; payload: Partial<DSLLight> }
+  | { type: ActionTypes.UPDATE_LIGHT; payload: { id: string; changes: Partial<DSLLight> } }
   | { type: ActionTypes.REMOVE_LIGHT; payload: { id: string } }
 
   // 场景操作
@@ -329,7 +329,7 @@ export interface DSLWorkspaceAPI {
 }
 
 export interface DSLMaterialsAPI {
-  list: Material[];
+  list: DSLMaterial[];
   create: (material: Partial<MaterialInline>) => string;
   update: (id: string, changes: Partial<MaterialInline>) => void;
   apply: (objectIds: string[], materialId: string) => void;
@@ -348,62 +348,6 @@ export interface DSLAPI {
   workspace: DSLWorkspaceAPI;
   materials: DSLMaterialsAPI;
   io: DSLIOAPI;
-}
-
-// 生成工作区扩展
-export interface GeneratedModel {
-  id: string;
-  name: string;
-  url: string;
-  thumbnail?: string;
-  metadata?: Record<string, any>;
-}
-
-export interface DSLGenerateAPI extends DSLAPI {
-  generate: {
-    prompt: string;
-    setPrompt: (prompt: string) => void;
-    isGenerating: boolean;
-    progress: number;
-    start: () => Promise<void>;
-    cancel: () => void;
-    addResult: (model: GeneratedModel) => void;
-  };
-}
-
-// 材质工作区扩展
-export interface TripoTextureAPI extends DSLAPI {
-  texture: {
-    preview: MaterialInline | null;
-    setPreview: (material: MaterialInline) => void;
-    applyToSelected: () => void;
-    presets: MaterialInline[];
-    loadPreset: (id: string) => void;
-  };
-}
-
-// 骨骼绑定工作区扩展
-export interface Bone {
-  id: string;
-  name: string;
-  parent?: string;
-  position: Vector3;
-  rotation: Vector3;
-  children?: string[];
-}
-
-export interface BoneWeight {
-  boneId: string;
-  weight: number;
-}
-
-export interface DSLRiggingAPI extends DSLAPI {
-  rigging: {
-    bones: Bone[];
-    addBone: (bone: Partial<Bone>) => void;
-    selectBone: (id: string) => void;
-    updateWeights: (vertexId: string, weights: BoneWeight[]) => void;
-  };
 }
 
 // 便捷配置类型

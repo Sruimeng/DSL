@@ -1,38 +1,36 @@
-import type { LoadingManager } from 'three';
 import { FileLoader, Loader, LoaderUtils } from 'three';
-
 import type { MeshoptDecoder } from 'three/examples/jsm/libs/meshopt_decoder.module.js';
 import type { DRACOLoader } from 'three/examples/jsm/loaders/DRACOLoader.js';
 import type { KTX2Loader } from 'three/examples/jsm/loaders/KTX2Loader.js';
+import type { LoaderOptions } from '../constants.js';
 import { GLTFParser } from './GLTF-parser.js';
-import type { GLTFExtensionParseType, GLTFJsonData } from './constants.js';
-import { BINARY_EXTENSION_HEADER_MAGIC, EXTENSIONS } from './constants.js';
-import {
-  GLTFBinaryExtension,
-  loadExtension,
-  registerDefaultExtensions,
-} from './extensions/index.js';
+import type { GLTF, GLTFExtensionParseType, GLTFJsonData } from './constants';
+import { BINARY_EXTENSION_HEADER_MAGIC, EXTENSIONS } from './constants';
+import { GLTFBinaryExtension, loadExtension, registerDefaultExtensions } from './extensions';
 /**
  * A loader for the glTF 2.0 format.
  *
  * @augments Loader
  */
-export class GLTFLoader extends Loader {
+export class GLTFLoader extends Loader<GLTF> {
   dracoLoader?: DRACOLoader;
   ktx2Loader?: KTX2Loader;
   meshoptDecoder?: typeof MeshoptDecoder;
   pluginCallbacks: Array<(parser: GLTFParser) => { name: string }>;
+  wireframe?: boolean;
   /**
    * Constructs a new glTF loader.
    *
-   * @param {LoadingManager} [manager] - The loading manager.
+   * @param {LoaderOptions} [options] - The loading options.
    */
-  constructor(manager: LoadingManager) {
+  constructor(options?: LoaderOptions) {
+    const { manager, wireframe } = options || {};
     super(manager);
 
     this.dracoLoader = undefined;
     this.ktx2Loader = undefined;
     this.meshoptDecoder = undefined;
+    this.wireframe = wireframe;
 
     this.pluginCallbacks = [];
 
@@ -50,7 +48,7 @@ export class GLTFLoader extends Loader {
    */
   override load(
     url: string,
-    onLoad: (data: unknown) => void,
+    onLoad: (data: GLTF) => void,
     onProgress?: (event: ProgressEvent) => void,
     onError?: (err: unknown) => void,
   ) {
@@ -101,7 +99,7 @@ export class GLTFLoader extends Loader {
           this.parse(
             data,
             resourcePath,
-            (gltf: GLTFJsonData) => {
+            (gltf: GLTF) => {
               onLoad(gltf);
               this.manager.itemEnd(url);
             },
@@ -226,7 +224,7 @@ export class GLTFLoader extends Loader {
   parse(
     data: string | AllowSharedBufferSource,
     path: string,
-    onLoad: (gltf: GLTFJsonData) => void,
+    onLoad: (gltf: GLTF) => void,
     onError: (error: Error) => void,
   ) {
     let json: GLTFJsonData = {
@@ -334,7 +332,7 @@ export class GLTFLoader extends Loader {
 
     parser.setExtensions(extensions);
     parser.setPlugins(plugins);
-    parser.parse(onLoad, onError);
+    parser.parse(onLoad, onError, this.wireframe);
   }
 
   /**

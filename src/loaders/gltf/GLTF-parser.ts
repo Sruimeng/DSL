@@ -144,6 +144,7 @@ export class GLTFParser {
   nodeNamesUsed: Record<string, number | string>;
   textureLoader: TextureLoader | ImageBitmapLoader | Loader;
   fileLoader: FileLoader;
+  wireframe?: boolean;
 
   constructor(
     json: GLTFJsonData = {
@@ -232,9 +233,10 @@ export class GLTFParser {
     this.plugins = plugins;
   }
 
-  parse(onLoad: (result: any) => void, onError: (error: Error) => void) {
+  parse(onLoad: (result: GLTF) => void, onError: (error: Error) => void, wireframe?: boolean) {
     const json = this.json;
     const extensions = this.extensions;
+    this.wireframe = wireframe;
 
     // Clear the loader cache
     this.cache.removeAll();
@@ -1503,14 +1505,12 @@ export class GLTFParser {
             mesh.geometry = toTrianglesDrawMode(mesh.geometry, TriangleFanDrawMode);
           }
 
-          const wireframeGeometry = new GLBEdgeMeshGeometry(geometry);
-          const wireframeMaterial = new TriangleWireframeMaterial({
-            lineWidth: 2,
-            color: 0x000000,
-            opacity: 0.8,
-          });
-          wireframeMaterial.userData.wireframe = true;
-          wireframeMesh = new Line2(wireframeGeometry as any, wireframeMaterial as any);
+          if (this.wireframe) {
+            const wireframeGeometry = new GLBEdgeMeshGeometry(geometry);
+            const wireframeMaterial = new TriangleWireframeMaterial();
+            wireframeMaterial.userData.wireframe = true;
+            wireframeMesh = new Line2(wireframeGeometry as any, wireframeMaterial as any);
+          }
         } else if (primitive.mode === WEBGL_CONSTANTS.LINES) {
           mesh = new LineSegments(geometry, material);
         } else if (primitive.mode === WEBGL_CONSTANTS.LINE_STRIP) {

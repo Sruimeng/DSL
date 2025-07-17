@@ -1,6 +1,7 @@
 import * as fflate from 'fflate';
-import type { Group, LoadingManager } from 'three';
+import type { Group, Object3DEventMap } from 'three';
 import { FileLoader, Loader, LoaderUtils, TextureLoader } from 'three';
+import type { LoaderOptions } from '../constants';
 import {
   global,
   type FBXConnectionDocment,
@@ -919,14 +920,18 @@ class BinaryParser {
  * @augments Loader
  * @three_import import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
  */
-class FBXLoader extends Loader {
+class FBXLoader extends Loader<Group<Object3DEventMap>> {
   /**
    * Constructs a new FBX loader.
    *
-   * @param {LoadingManager} [manager] - The loading manager.
+   * @param {LoaderOptions} [options] - The loading options.
    */
-  constructor(manager: LoadingManager) {
+  constructor(options?: LoaderOptions) {
+    const { manager, wireframe } = options || {};
+
     super(manager);
+
+    global.wireframe = wireframe;
   }
 
   /**
@@ -940,7 +945,7 @@ class FBXLoader extends Loader {
    */
   override load(
     url: string,
-    onLoad: (group: Group) => void,
+    onLoad: (group: Group<Object3DEventMap>) => void,
     onProgress?: (event: ProgressEvent) => void,
     onError?: (event: unknown) => void,
   ) {

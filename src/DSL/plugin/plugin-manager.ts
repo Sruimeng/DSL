@@ -1,4 +1,3 @@
-import type { DSLEngine } from '../engine/engine';
 import type { DSLAPI } from '../types/core';
 
 // 插件接口定义
@@ -97,10 +96,7 @@ export class PluginManager {
   private commands = new Map<string, PluginCommand>();
   private eventListeners = new Set<(event: PluginEvent) => void>();
 
-  constructor(
-    private api: DSLAPI,
-    private engine: DSLEngine,
-  ) {}
+  constructor(private api: DSLAPI) {}
 
   // 安装插件
   async install(plugin: DSLPlugin): Promise<void> {
