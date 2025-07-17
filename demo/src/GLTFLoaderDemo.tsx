@@ -1,18 +1,25 @@
-import { Html, OrbitControls, useGLTF } from '@react-three/drei';
-import { Canvas, useThree } from '@react-three/fiber';
-import { useEffect, useRef, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Canvas, useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls, useGLTF, Html } from '@react-three/drei';
+import * as THREE from 'three';
 import { DSLEngine } from '../../src/DSL/engine';
 import { DSLRenderer } from '../../src/DSL/r3fRenderer';
-import { ActionTypes } from '../../src/DSL/types';
+import './styles/gltf-demo.css';
 
-// DSL React Hook - 修正版
+// 使用Three的对象类型
+interface Vector3 {
+  x: number;
+  y: number;
+  z: number;
+}
+
+// DSL React Hook
 function useDSLRenderer() {
   const r3fContext = useThree();
   const [engine] = useState(() => new DSLEngine());
   const rendererRef = useRef<DSLRenderer>();
 
   useEffect(() => {
-    // 只在第一次创建时初始化
     if (!rendererRef.current) {
       rendererRef.current = new DSLRenderer(r3fContext, engine);
     }
@@ -22,358 +29,322 @@ function useDSLRenderer() {
         rendererRef.current.dispose();
       }
     };
-  }, []); // 空依赖数组，只运行一次
+  }, []);
 
   return { engine, renderer: rendererRef.current };
 }
 
-// GLTF模型组件 - 修正版
-function GLTFModel({ url }: { url: string }) {
-  const { scene } = useGLTF(url);
+// 3D场景组件
+function Scene() {
   const { engine } = useDSLRenderer();
+  const [selectedModel, setSelectedModel] = useState<string | null>(null);
+  const gltfRef = useRef<THREE.Group>(null);
+
+  // 加载GLTF模型
+  const { scene: gltfScene } = useGLTF('./assets/glb/ToyCar.glb');
 
   useEffect(() => {
-    if (scene && engine) {
-      // 使用正确的 DSL API
+    if (gltfScene && engine) {
       engine.addObject({
         id: 'gltf_model',
-        name: 'GLTF Model',
+        name: 'Toy Car',
         type: 'group',
         transform: {
           position: { x: 0, y: 0, z: 0 },
           rotation: { x: 0, y: 0, z: 0 },
-          scale: { x: 1, y: 1, z: 1 },
+          scale: { x: 1, y: 1, z: 1 }
         },
         visible: true,
-        castShadow: false,
-        receiveShadow: false,
+        castShadow: true,
+        receiveShadow: true
       });
     }
-  }, [scene, engine]);
+  }, [gltfScene, engine]);
 
-  return <primitive object={scene} />;
-}
+  useFrame((state) => {
+    if (gltfRef.current) {
+      gltfRef.current.rotation.y += 0.005;
+    }
+  });
 
-// DSL控制面板 - 修正版
-function DSLControls() {
-  const { engine } = useDSLRenderer();
-  const [rotation, setRotation] = useState([0, 0, 0]);
-  const [position, setPosition] = useState([0, 0, 0]);
-  const [scale, setScale] = useState([1, 1, 1]);
-
-  const updateTransform = () => {
-    engine.updateObject('gltf_model', {
-      transform: {
-        position: { x: position[0], y: position[1], z: position[2] },
-        rotation: {
-          x: (rotation[0] * Math.PI) / 180,
-          y: (rotation[1] * Math.PI) / 180,
-          z: (rotation[2] * Math.PI) / 180,
-        },
-        scale: { x: scale[0], y: scale[1], z: scale[2] },
-      },
-    });
-  };
-
-  const addLight = () => {
-    engine.dispatch({
-      type: ActionTypes.ADD_LIGHT,
-      payload: {
-        id: 'directional_light',
-        name: 'Directional Light',
-        type: 'directional',
-        color: '#ffffff',
-        intensity: 1,
-        position: { x: 5, y: 5, z: 5 },
-        castShadow: true,
-      },
-    });
-  };
-
-  const changeMaterial = (color: string) => {
-    const materialId = engine.addMaterial({
-      name: `Material ${color}`,
-      type: 'standard',
-      color,
-      metalness: 0.5,
-      roughness: 0.5,
-    });
-
-    // 应用材质到模型
-    engine.applyMaterial(['gltf_model'], materialId);
-  };
-
-  return (
-    <Html position={[-5, 2, 0]} style={{ width: '300px' }}>
-      <div
-        style={{
-          background: 'rgba(0,0,0,0.8)',
-          padding: '20px',
-          borderRadius: '10px',
-          color: 'white',
-          fontSize: '14px',
-        }}
-      >
-        <h3>DSL Controls</h3>
-
-        {/* Rotation Controls */}
-        <div style={{ marginBottom: '15px' }}>
-          <h4>Rotation (degrees):</h4>
-          <div style={{ marginBottom: '8px' }}>
-            <label>X: </label>
-            <input
-              type="range"
-              min="0"
-              max="360"
-              value={rotation[0]}
-              onChange={(e) => setRotation([+e.target.value, rotation[1], rotation[2]])}
-              style={{ width: '180px' }}
-            />
-            <span style={{ marginLeft: '8px' }}>{rotation[0]}°</span>
-          </div>
-          <div style={{ marginBottom: '8px' }}>
-            <label>Y: </label>
-            <input
-              type="range"
-              min="0"
-              max="360"
-              value={rotation[1]}
-              onChange={(e) => setRotation([rotation[0], +e.target.value, rotation[2]])}
-              style={{ width: '180px' }}
-            />
-            <span style={{ marginLeft: '8px' }}>{rotation[1]}°</span>
-          </div>
-          <div style={{ marginBottom: '8px' }}>
-            <label>Z: </label>
-            <input
-              type="range"
-              min="0"
-              max="360"
-              value={rotation[2]}
-              onChange={(e) => setRotation([rotation[0], rotation[1], +e.target.value])}
-              style={{ width: '180px' }}
-            />
-            <span style={{ marginLeft: '8px' }}>{rotation[2]}°</span>
-          </div>
-        </div>
-
-        {/* Position Controls */}
-        <div style={{ marginBottom: '15px' }}>
-          <h4>Position:</h4>
-          <div style={{ marginBottom: '8px' }}>
-            <label>X: </label>
-            <input
-              type="range"
-              min="-5"
-              max="5"
-              step="0.1"
-              value={position[0]}
-              onChange={(e) => setPosition([+e.target.value, position[1], position[2]])}
-              style={{ width: '180px' }}
-            />
-            <span style={{ marginLeft: '8px' }}>{position[0].toFixed(1)}</span>
-          </div>
-          <div style={{ marginBottom: '8px' }}>
-            <label>Y: </label>
-            <input
-              type="range"
-              min="-5"
-              max="5"
-              step="0.1"
-              value={position[1]}
-              onChange={(e) => setPosition([position[0], +e.target.value, position[2]])}
-              style={{ width: '180px' }}
-            />
-            <span style={{ marginLeft: '8px' }}>{position[1].toFixed(1)}</span>
-          </div>
-          <div style={{ marginBottom: '8px' }}>
-            <label>Z: </label>
-            <input
-              type="range"
-              min="-5"
-              max="5"
-              step="0.1"
-              value={position[2]}
-              onChange={(e) => setPosition([position[0], position[1], +e.target.value])}
-              style={{ width: '180px' }}
-            />
-            <span style={{ marginLeft: '8px' }}>{position[2].toFixed(1)}</span>
-          </div>
-        </div>
-
-        {/* Scale Controls */}
-        <div style={{ marginBottom: '15px' }}>
-          <h4>Scale:</h4>
-          <input
-            type="range"
-            min="0.1"
-            max="3"
-            step="0.1"
-            value={scale[0]}
-            onChange={(e) => setScale([+e.target.value, +e.target.value, +e.target.value])}
-            style={{ width: '180px' }}
-          />
-          <span style={{ marginLeft: '8px' }}>{scale[0].toFixed(1)}</span>
-        </div>
-
-        {/* Action Buttons */}
-        <div style={{ marginBottom: '15px' }}>
-          <button
-            onClick={updateTransform}
-            style={{
-              width: '100%',
-              padding: '8px',
-              backgroundColor: '#007acc',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Update Transform
-          </button>
-        </div>
-
-        <div style={{ marginBottom: '15px' }}>
-          <button
-            onClick={addLight}
-            style={{
-              width: '100%',
-              padding: '8px',
-              backgroundColor: '#28a745',
-              color: 'white',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: 'pointer',
-            }}
-          >
-            Add Directional Light
-          </button>
-        </div>
-
-        {/* Material Buttons */}
-        <div>
-          <h4>Materials:</h4>
-          <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap' }}>
-            <button
-              onClick={() => changeMaterial('#ff0000')}
-              style={{
-                flex: '1',
-                padding: '8px',
-                backgroundColor: '#ff0000',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px',
-              }}
-            >
-              Red
-            </button>
-            <button
-              onClick={() => changeMaterial('#00ff00')}
-              style={{
-                flex: '1',
-                padding: '8px',
-                backgroundColor: '#00ff00',
-                color: 'black',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px',
-              }}
-            >
-              Green
-            </button>
-            <button
-              onClick={() => changeMaterial('#0000ff')}
-              style={{
-                flex: '1',
-                padding: '8px',
-                backgroundColor: '#0000ff',
-                color: 'white',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '12px',
-              }}
-            >
-              Blue
-            </button>
-          </div>
-        </div>
-      </div>
-    </Html>
-  );
-}
-
-// 主场景组件
-function Scene() {
   return (
     <>
       <ambientLight intensity={0.5} />
-      <pointLight position={[10, 10, 10]} />
+      <directionalLight position={[10, 10, 5]} intensity={1} castShadow />
+      <pointLight position={[-10, -10, -5]} intensity={0.5} />
+      
       <OrbitControls enablePan={true} enableZoom={true} enableRotate={true} />
-
-      {/* GLTF模型 */}
-      <GLTFModel url="./assets/glb/ToyCar.glb" />
-
-      {/* DSL控制面板 */}
-      <DSLControls />
-
-      {/* 网格辅助 */}
+      
+      <primitive 
+        ref={gltfRef}
+        object={gltfScene} 
+        position={[0, 0, 0]}
+        scale={[1, 1, 1]}
+      />
+      
       <gridHelper args={[10, 10]} />
     </>
   );
 }
 
-// 主组件
-export default function GLTFLoaderDemo() {
-  const [error, setError] = useState<string | null>(null);
+// 控制面板组件
+function ControlPanel() {
+  const { engine } = useDSLRenderer();
+  const [rotation, setRotation] = useState({ x: 0, y: 0, z: 0 });
+  const [position, setPosition] = useState({ x: 0, y: 0, z: 0 });
+  const [scale, setScale] = useState({ x: 1, y: 1, z: 1 });
+  const [logs, setLogs] = useState<string[]>([]);
+  const [selectedFile, setSelectedFile] = useState<string>('ToyCar.glb');
+
+  const addLog = (message: string) => {
+    const timestamp = new Date().toLocaleTimeString();
+    setLogs(prev => [...prev, `[${timestamp}] ${message}`].slice(-10));
+  };
+
+  const updateTransform = () => {
+    if (engine) {
+      engine.updateObject('gltf_model', {
+        transform: {
+          position: { x: position.x, y: position.y, z: position.z },
+          rotation: { x: rotation.x * Math.PI / 180, y: rotation.y * Math.PI / 180, z: rotation.z * Math.PI / 180 },
+          scale: { x: scale.x, y: scale.y, z: scale.z }
+        }
+      });
+      addLog(`Transform updated: Pos(${position.x.toFixed(1)}, ${position.y.toFixed(1)}, ${position.z.toFixed(1)})`);
+    }
+  };
+
+  const addLight = () => {
+    if (engine) {
+      engine.addLight({
+        id: 'directional_light_2',
+        name: 'Additional Light',
+        type: 'directional',
+        color: '#ffffff',
+        intensity: 0.8,
+        position: { x: 5, y: 5, z: 5 }
+      });
+      addLog('Added directional light');
+    }
+  };
+
+  const loadModel = (filename: string) => {
+    setSelectedFile(filename);
+    addLog(`Loading model: ${filename}`);
+  };
+
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      addLog(`Uploading: ${file.name}`);
+    }
+  };
+
+  const clearScene = () => {
+    if (engine) {
+      engine.clearScene();
+      addLog('Scene cleared');
+    }
+  };
 
   return (
-    <div style={{ width: '100vw', height: '100vh' }}>
-      {error ? (
-        <div
-          style={{
-            position: 'absolute',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            color: 'red',
-            background: 'rgba(0,0,0,0.8)',
-            padding: '20px',
-            borderRadius: '10px',
-            textAlign: 'center',
-          }}
-        >
-          <h3>Error</h3>
-          <p>{error}</p>
+    <div className="control-panel">
+      <div className="panel-header">
+        <h1>🎨 GLTF模型管理器</h1>
+        <p>React Three Fiber + DSL引擎演示</p>
+      </div>
+
+      {/* 模型选择区域 */}
+      <div className="control-section">
+        <div className="section-title">📂 模型选择</div>
+        <div className="button-grid">
+          <button className="btn btn-primary" onClick={() => loadModel('ToyCar.glb')}>🚗 ToyCar</button>
+          <button className="btn btn-primary" onClick={() => loadModel('Duck.glb')}>🦆 Duck</button>
+          <button className="btn btn-primary" onClick={() => loadModel('Suzanne.glb')}>🐵 Suzanne</button>
+          <button className="btn btn-primary" onClick={() => loadModel('BoomBox.glb')}>📻 BoomBox</button>
         </div>
-      ) : (
-        <Canvas camera={{ position: [5, 5, 5], fov: 60 }} onError={setError}>
+        
+        <div className="control-group" style={{ marginTop: '12px' }}>
+          <label className="control-label">上传文件</label>
+          <input 
+            type="file" 
+            accept=".glb,.gltf" 
+            onChange={handleFileUpload}
+            style={{ display: 'none' }}
+            id="file-upload"
+          />
+          <button 
+            className="btn btn-secondary" 
+            onClick={() => document.getElementById('file-upload')?.click()}
+          >
+            📤 上传GLTF
+          </button>
+        </div>
+      </div>
+
+      {/* 变换控制区域 */}
+      <div className="control-section">
+        <div className="section-title">🎯 变换控制</div>
+        
+        <div className="control-group">
+          <label className="control-label">位置 (Position)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <div>
+              <label className="control-label">X: {position.x.toFixed(1)}</label>
+              <input 
+                type="range" 
+                className="range-input" 
+                min="-5" max="5" step="0.1" 
+                value={position.x}
+                onChange={(e) => setPosition({...position, x: parseFloat(e.target.value)})}
+              />
+            </div>
+            <div>
+              <label className="control-label">Y: {position.y.toFixed(1)}</label>
+              <input 
+                type="range" 
+                className="range-input" 
+                min="-5" max="5" step="0.1" 
+                value={position.y}
+                onChange={(e) => setPosition({...position, y: parseFloat(e.target.value)})}
+              />
+            </div>
+            <div>
+              <label className="control-label">Z: {position.z.toFixed(1)}</label>
+              <input 
+                type="range" 
+                className="range-input" 
+                min="-5" max="5" step="0.1" 
+                value={position.z}
+                onChange={(e) => setPosition({...position, z: parseFloat(e.target.value)})}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="control-group">
+          <label className="control-label">旋转 (Rotation)</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+            <div>
+              <label className="control-label">X: {rotation.x.toFixed(0)}°</label>
+              <input 
+                type="range" 
+                className="range-input" 
+                min="0" max="360" step="1" 
+                value={rotation.x}
+                onChange={(e) => setRotation({...rotation, x: parseFloat(e.target.value)})}
+              />
+            </div>
+            <div>
+              <label className="control-label">Y: {rotation.y.toFixed(0)}°</label>
+              <input 
+                type="range" 
+                className="range-input" 
+                min="0" max="360" step="1" 
+                value={rotation.y}
+                onChange={(e) => setRotation({...rotation, y: parseFloat(e.target.value)})}
+              />
+            </div>
+            <div>
+              <label className="control-label">Z: {rotation.z.toFixed(0)}°</label>
+              <input 
+                type="range" 
+                className="range-input" 
+                min="0" max="360" step="1" 
+                value={rotation.z}
+                onChange={(e) => setRotation({...rotation, z: parseFloat(e.target.value)})}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="control-group">
+          <label className="control-label">缩放 (Scale)</label>
+          <input 
+            type="range" 
+            className="range-input" 
+            min="0.1" max="3" step="0.1" 
+            value={scale.x}
+            onChange={(e) => setScale({x: parseFloat(e.target.value), y: parseFloat(e.target.value), z: parseFloat(e.target.value)})}
+          />
+          <label className="control-label">{scale.x.toFixed(1)}</label>
+        </div>
+
+        <button className="btn btn-primary" onClick={updateTransform}>
+          🔄 应用变换
+        </button>
+      </div>
+
+      {/* 场景控制区域 */}
+      <div className="control-section">
+        <div className="section-title">💡 场景控制</div>
+        <div className="button-grid">
+          <button className="btn btn-secondary" onClick={addLight}>💡 添加光源</button>
+          <button className="btn btn-warning" onClick={clearScene}>🗑️ 清空场景</button>
+        </div>
+      </div>
+
+      {/* 日志区域 */}
+      <div className="logs-section">
+        <div className="section-title">📝 操作日志</div>
+        <div className="logs-container">
+          {logs.map((log, index) => (
+            <div key={index}>{log}</div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 统计面板组件
+function StatsPanel() {
+  const [stats, setStats] = useState({
+    objects: 1,
+    materials: 1,
+    lights: 2,
+    fps: 60
+  });
+
+  return (
+    <div className="top-stats-panel">
+      <div className="stats-title">📊 场景统计</div>
+      <div className="stats-grid">
+        <div className="stat-item">
+          <span className="label">Objects:</span>
+          <span className="value">{stats.objects}</span>
+        </div>
+        <div className="stat-item">
+          <span className="label">Materials:</span>
+          <span className="value">{stats.materials}</span>
+        </div>
+        <div className="stat-item">
+          <span className="label">Lights:</span>
+          <span className="value">{stats.lights}</span>
+        </div>
+        <div className="stat-item">
+          <span className="label">FPS:</span>
+          <span className="value">{stats.fps}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// 主组件
+export default function GLTFLoaderDemo() {
+  return (
+    <div className="gltf-demo-container">
+      {/* 左侧展示区 */}
+      <div className="viewer-section">
+        <Canvas camera={{ position: [5, 5, 5], fov: 60 }}>
           <Scene />
         </Canvas>
-      )}
-
-      <div
-        style={{
-          position: 'absolute',
-          top: 20,
-          left: 20,
-          color: 'white',
-          background: 'rgba(0,0,0,0.7)',
-          padding: '15px',
-          borderRadius: '8px',
-          maxWidth: '300px',
-        }}
-      >
-        <h1 style={{ margin: '0 0 10px 0', fontSize: '24px' }}>DSL GLTF Loader Demo</h1>
-        <p style={{ margin: '0', fontSize: '14px' }}>使用React Three Fiber和DSL引擎加载GLTF模型</p>
-        <p style={{ margin: '5px 0 0 0', fontSize: '12px', opacity: 0.7 }}>
-          使用鼠标控制视角，左侧面板控制模型
-        </p>
+        <StatsPanel />
       </div>
+
+      {/* 右侧控制面板 */}
+      <ControlPanel />
     </div>
   );
 }
