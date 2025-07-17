@@ -7,6 +7,7 @@ lib
 .eslintcache
 *.tsbuildinfo
 .vscode
+.claude
 .idea
 .history
 .pnpm-debug.log
