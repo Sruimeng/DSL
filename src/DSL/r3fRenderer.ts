@@ -21,7 +21,6 @@ import {
   SphereGeometry,
   SpotLight,
 } from 'three';
-import type { OrbitControls } from 'three/examples/jsm/Addons.js';
 import type { DSLEngine } from './engine';
 import {
   type DSLCamera,
