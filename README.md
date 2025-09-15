@@ -18,28 +18,34 @@ DSL/
 │   ├── mcp-integration.md
 │   └── api-reference.md
 ├── src/
+│   ├── type/
+│   │   ├── index.ts                  # USD类型定义入口
+│   │   ├── scene.ts                   # USD场景相关类型
+│   │   ├── camera.ts                  # USD相机相关类型
+│   │   ├── renderer.ts                # USD渲染器相关类型
+│   │   └── ...                        # USD其他类型
 │   ├── core/
-│   │   ├── SceneManager.ts          # Three.js 场景管理核心
-│   │   ├── USDLoader.ts             # USD JSON 加载器
-│   │   ├── DSLParser.ts             # DSL 解析器，USD JSON 转 Three.js 对象
-│   │   ├── EventBus.ts              # 事件总线，模块间通信
-│   │   └── DSLEngine.ts             # DSL Engine 核心驱动器
+│   │   ├── scene-manager.ts          # Three.js 场景管理核心
+│   │   ├── USD-loader.ts             # USD JSON 加载器
+│   │   ├── DSL-parser.ts             # DSL 解析器，USD JSON 转 Three.js 对象
+│   │   ├── event-bus.ts              # 事件总线，模块间通信
+│   │   └── DSL-engine.ts             # DSL Engine 核心驱动器
 │   ├── plugins/
-│   │   ├── BasePlugin.ts            # 插件基类
-│   │   ├── RenderPlugin.ts          # 渲染相关插件
-│   │   ├── InteractionPlugin.ts    # 交互插件
+│   │   ├── base-plugin.ts            # 插件基类
+│   │   ├── render-plugin.ts          # 渲染相关插件
+│   │   ├── interaction-plugin.ts    # 交互插件
 │   │   └── ...                     # 其他插件
 │   ├── actions/
-│   │   ├── BaseAction.ts            # 动作基类
-│   │   ├── AddMeshAction.ts         # 添加网格动作
-│   │   ├── RemoveMeshAction.ts      # 删除网格动作
-│   │   ├── ModifyPropertyAction.ts  # 修改属性动作
+│   │   ├── base-action.ts            # 动作基类
+│   │   ├── add-mesh-action.ts         # 添加网格动作
+│   │   ├── remove-mesh-action.ts      # 删除网格动作
+│   │   ├── modify-property-action.ts  # 修改属性动作
 │   │   └── ...                     # 其他动作
 │   ├── mcp/
-│   │   └── MCPController.ts         # AI MCP 调用接口（不需要实现）
+│   │   └── MCP-controller.ts         # AI MCP 调用接口（不需要实现）
 │   ├── utils/
-│   │   ├── MathUtils.ts             # 数学工具
-│   │   ├── JsonUtils.ts             # JSON 处理工具
+│   │   ├── math-utils.ts             # 数学工具
+│   │   ├── json-utils.ts             # JSON 处理工具
 │   │   └── ...                     # 其他工具
 │   ├── index.ts                    # 入口文件，导出核心 API
 ├── examples/
