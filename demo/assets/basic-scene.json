@@ -1,0 +1,135 @@
+{
+  "metadata": {
+    "defaultPrim": "World",
+    "upAxis": "Y",
+    "timeCodesPerSecond": 24,
+    "frameRate": 24,
+    "authoredBy": "DSL Demo",
+    "created": "2024-01-01T00:00:00Z"
+  },
+  "layer": {
+    "identifier": "basic-scene.usd",
+    "version": "1.0",
+    "comment": "基础场景演示"
+  },
+  "prims": [
+    {
+      "name": "World",
+      "type": "Xform",
+      "xformOpOrder": ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"],
+      "transform": {
+        "translate": [0, 0, 0],
+        "rotate": [0, 0, 0],
+        "scale": [1, 1, 1]
+      },
+      "children": [
+        {
+          "name": "Camera",
+          "type": "Camera",
+          "attributes": {
+            "projection": "perspective",
+            "horizontalAperture": 36,
+            "verticalAperture": 24,
+            "focalLength": 50,
+            "clippingRange": [0.1, 1000]
+          },
+          "transform": {
+            "translate": [0, 5, 10],
+            "rotate": [-30, 0, 0]
+          }
+        },
+        {
+          "name": "Ground",
+          "type": "Mesh",
+          "purpose": "default",
+          "points": [
+            [-5, 0, -5], [5, 0, -5], [5, 0, 5], [-5, 0, 5]
+          ],
+          "faceVertexCounts": [4],
+          "faceVertexIndices": [0, 1, 2, 3],
+          "primvars": {
+            "st": {
+              "values": [[0, 0], [1, 0], [1, 1], [0, 1]],
+              "interpolation": "vertex"
+            }
+          },
+          "normals": {
+            "values": [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]],
+            "interpolation": "vertex"
+          },
+          "doubleSided": true
+        },
+        {
+          "name": "Cube",
+          "type": "Mesh",
+          "purpose": "default",
+          "points": [
+            [-0.5, 0, -0.5], [0.5, 0, -0.5], [0.5, 0, 0.5], [-0.5, 0, 0.5],
+            [-0.5, 1, -0.5], [0.5, 1, -0.5], [0.5, 1, 0.5], [-0.5, 1, 0.5]
+          ],
+          "faceVertexCounts": [4, 4, 4, 4, 4, 4],
+          "faceVertexIndices": [
+            0, 1, 2, 3,  // 底面
+            4, 7, 6, 5,  // 顶面
+            0, 4, 5, 1,  // 前面
+            1, 5, 6, 2,  // 右面
+            2, 6, 7, 3,  // 后面
+            3, 7, 4, 0   // 左面
+          ],
+          "normals": {
+            "values": [
+              [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0],
+              [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
+              [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1],
+              [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+              [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],
+              [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0]
+            ],
+            "interpolation": "faceVarying"
+          },
+          "primvars": {
+            "st": {
+              "values": [
+                [0, 0], [1, 0], [1, 1], [0, 1],  // 底面
+                [0, 0], [1, 0], [1, 1], [0, 1],  // 顶面
+                [0, 0], [1, 0], [1, 1], [0, 1],  // 前面
+                [0, 0], [1, 0], [1, 1], [0, 1],  // 右面
+                [0, 0], [1, 0], [1, 1], [0, 1],  // 后面
+                [0, 0], [1, 0], [1, 1], [0, 1]   // 左面
+              ],
+              "interpolation": "faceVarying"
+            }
+          },
+          "displayColor": {
+            "values": [
+              [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],  // 红色底面
+              [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],  // 绿色顶面
+              [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1],  // 蓝色前面
+              [1, 1, 0], [1, 1, 0], [1, 1, 0], [1, 1, 0],  // 黄色右面
+              [1, 0, 1], [1, 0, 1], [1, 0, 1], [1, 0, 1],  // 紫色后面
+              [0, 1, 1], [0, 1, 1], [0, 1, 1], [0, 1, 1]   // 青色左面
+            ],
+            "interpolation": "faceVarying"
+          }
+        },
+        {
+          "name": "DistantLight",
+          "type": "Light",
+          "lightType": "distant",
+          "color": [1, 1, 1],
+          "intensity": 1000,
+          "exposure": 0,
+          "transform": {
+            "translate": [0, 10, 0],
+            "rotate": [-45, 45, 0]
+          },
+          "shadow": {
+            "enable": true,
+            "type": "pcf",
+            "resolution": [1024, 1024]
+          }
+        }
+      ]
+    }
+  ]
+}

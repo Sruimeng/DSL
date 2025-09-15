@@ -5,12 +5,13 @@
  * 和常见几何属性的类型。
  */
 
-import type { USDPrim } from './scene';
+import type { IMatrix4, IParams, IVector3 } from './common';
+import type { IUSDPrim } from './scene';
 
 /**
  * Primitive types
  */
-export type PrimitiveType =
+export type IPrimitiveType =
   | 'Cube'
   | 'Sphere'
   | 'Cylinder'
@@ -31,7 +32,7 @@ export type PrimitiveType =
 /**
  * Primitive attributes
  */
-export interface PrimitiveAttributes {
+export interface IPrimitiveAttributes {
   /** Width */
   width?: number;
   /** Height */
@@ -63,20 +64,20 @@ export interface PrimitiveAttributes {
   /** Phi length */
   phiLength?: number;
   /** Pivot point */
-  pivot?: [number, number, number];
+  pivot?: IVector3;
   /** Scale */
-  scale?: [number, number, number];
+  scale?: IVector3;
 }
 
 /**
  * Cube primitive
  */
-export interface CubePrimitive extends USDPrim {
+export interface ICubePrimitive extends IUSDPrim {
   type: 'Cube';
   /** Cube size */
   size: number;
   /** Cube center */
-  center?: [number, number, number];
+  center?: IVector3;
   /** Subdivisions */
   subdivisions?: [number, number, number];
 }
@@ -84,7 +85,7 @@ export interface CubePrimitive extends USDPrim {
 /**
  * Sphere primitive
  */
-export interface SpherePrimitive extends USDPrim {
+export interface ISpherePrimitive extends IUSDPrim {
   type: 'Sphere';
   /** Sphere radius */
   radius: number;
@@ -105,7 +106,7 @@ export interface SpherePrimitive extends USDPrim {
 /**
  * Cylinder primitive
  */
-export interface CylinderPrimitive extends USDPrim {
+export interface ICylinderPrimitive extends IUSDPrim {
   type: 'Cylinder';
   /** Cylinder radius */
   radiusTop?: number;
@@ -128,7 +129,7 @@ export interface CylinderPrimitive extends USDPrim {
 /**
  * Cone primitive
  */
-export interface ConePrimitive extends USDPrim {
+export interface IConePrimitive extends IUSDPrim {
   type: 'Cone';
   /** Cone radius */
   radius: number;
@@ -149,7 +150,7 @@ export interface ConePrimitive extends USDPrim {
 /**
  * Torus primitive
  */
-export interface TorusPrimitive extends USDPrim {
+export interface ITorusPrimitive extends IUSDPrim {
   type: 'Torus';
   /** Torus radius */
   radius: number;
@@ -164,9 +165,9 @@ export interface TorusPrimitive extends USDPrim {
 }
 
 /**
- ** Torus knot primitive
+ * Torus knot primitive
  */
-export interface TorusKnotPrimitive extends USDPrim {
+export interface ITorusKnotPrimitive extends IUSDPrim {
   type: 'TorusKnot';
   /** Torus radius */
   radius: number;
@@ -185,10 +186,10 @@ export interface TorusKnotPrimitive extends USDPrim {
 /**
  * Tube primitive
  */
-export interface TubePrimitive extends USDPrim {
+export interface ITubePrimitive extends IUSDPrim {
   type: 'Tube';
   /** Tube path */
-  path: [number, number, number][];
+  path: IVector3[];
   /** Tube radius */
   radius?: number;
   /** Tube segments */
@@ -202,7 +203,7 @@ export interface TubePrimitive extends USDPrim {
 /**
  * Plane primitive
  */
-export interface PlanePrimitive extends USDPrim {
+export interface IPlanePrimitive extends IUSDPrim {
   type: 'Plane';
   /** Plane width */
   width: number;
@@ -217,7 +218,7 @@ export interface PlanePrimitive extends USDPrim {
 /**
  * Circle primitive
  */
-export interface CirclePrimitive extends USDPrim {
+export interface ICirclePrimitive extends IUSDPrim {
   type: 'Circle';
   /** Circle radius */
   radius: number;
@@ -232,7 +233,7 @@ export interface CirclePrimitive extends USDPrim {
 /**
  * Capsule primitive
  */
-export interface CapsulePrimitive extends USDPrim {
+export interface ICapsulePrimitive extends IUSDPrim {
   type: 'Capsule';
   /** Capsule radius */
   radius: number;
@@ -247,7 +248,7 @@ export interface CapsulePrimitive extends USDPrim {
 /**
  * Tetrahedron primitive
  */
-export interface TetrahedronPrimitive extends USDPrim {
+export interface ITetrahedronPrimitive extends IUSDPrim {
   type: 'Tetrahedron';
   /** Tetrahedron radius */
   radius: number;
@@ -258,7 +259,7 @@ export interface TetrahedronPrimitive extends USDPrim {
 /**
  * Octahedron primitive
  */
-export interface OctahedronPrimitive extends USDPrim {
+export interface IOctahedronPrimitive extends IUSDPrim {
   type: 'Octahedron';
   /** Octahedron radius */
   radius: number;
@@ -269,7 +270,7 @@ export interface OctahedronPrimitive extends USDPrim {
 /**
  * Icosahedron primitive
  */
-export interface IcosahedronPrimitive extends USDPrim {
+export interface IIcosahedronPrimitive extends IUSDPrim {
   type: 'Icosahedron';
   /** Icosahedron radius */
   radius: number;
@@ -280,7 +281,7 @@ export interface IcosahedronPrimitive extends USDPrim {
 /**
  * Dodecahedron primitive
  */
-export interface DodecahedronPrimitive extends USDPrim {
+export interface IDodecahedronPrimitive extends IUSDPrim {
   type: 'Dodecahedron';
   /** Dodecahedron radius */
   radius: number;
@@ -291,7 +292,7 @@ export interface DodecahedronPrimitive extends USDPrim {
 /**
  * Ring primitive
  */
-export interface RingPrimitive extends USDPrim {
+export interface IRingPrimitive extends IUSDPrim {
   type: 'Ring';
   /** Inner radius */
   innerRadius: number;
@@ -310,20 +311,20 @@ export interface RingPrimitive extends USDPrim {
 /**
  * Shape primitive
  */
-export interface ShapePrimitive extends USDPrim {
+export interface IShapePrimitive extends IUSDPrim {
   type: 'Shape';
   /** Shape type */
   shapeType: 'path' | 'circle' | 'rectangle' | 'ellipse' | 'polygon';
   /** Shape parameters */
-  parameters: Record<string, unknown>;
+  parameters: IParams;
   /** Shape transform */
-  transform?: number[];
+  transform?: IMatrix4;
 }
 
 /**
  * Text primitive
  */
-export interface TextPrimitive extends USDPrim {
+export interface ITextPrimitive extends IUSDPrim {
   type: 'Text';
   /** Text content */
   text: string;
@@ -346,10 +347,10 @@ export interface TextPrimitive extends USDPrim {
 /**
  * Extrusion primitive
  */
-export interface ExtrusionPrimitive extends USDPrim {
+export interface IExtrusionPrimitive extends IUSDPrim {
   type: 'Extrude';
   /** Shape to extrude */
-  shape: ShapePrimitive;
+  shape: IShapePrimitive;
   /** Extrusion settings */
   settings: {
     depth: number;
@@ -363,7 +364,7 @@ export interface ExtrusionPrimitive extends USDPrim {
 /**
  * Lathe primitive
  */
-export interface LathePrimitive extends USDPrim {
+export interface ILathePrimitive extends IUSDPrim {
   type: 'Lathe';
   /** Points to revolve */
   points: [number, number][];
@@ -378,19 +379,39 @@ export interface LathePrimitive extends USDPrim {
 /**
  * Primitive collection
  */
-export interface PrimitiveCollection {
+export interface IPrimitiveCollection {
   /** Collection name */
   name: string;
   /** Primitives in collection */
-  primitives: PrimitivePrimitive[];
+  primitives: (
+    | ICubePrimitive
+    | ISpherePrimitive
+    | ICylinderPrimitive
+    | IConePrimitive
+    | ITorusPrimitive
+    | ITorusKnotPrimitive
+    | ITubePrimitive
+    | IPlanePrimitive
+    | ICirclePrimitive
+    | ICapsulePrimitive
+    | ITetrahedronPrimitive
+    | IOctahedronPrimitive
+    | IIcosahedronPrimitive
+    | IDodecahedronPrimitive
+    | IRingPrimitive
+    | IShapePrimitive
+    | ITextPrimitive
+    | IExtrusionPrimitive
+    | ILathePrimitive
+  )[];
   /** Collection properties */
-  properties?: Record<string, unknown>;
+  properties?: IParams;
 }
 
 /**
  * Primitive generator settings
  */
-export interface PrimitiveGeneratorSettings {
+export interface IPrimitiveGeneratorSettings {
   /** UV generation */
   generateUVs: boolean;
   /** Normal generation */
@@ -406,13 +427,13 @@ export interface PrimitiveGeneratorSettings {
 /**
  * Primitive state for runtime
  */
-export interface PrimitiveState {
+export interface IPrimitiveState {
   /** Primitive ID */
   id: string;
   /** Primitive type */
-  type: PrimitiveType;
+  type: IPrimitiveType;
   /** Primitive attributes */
-  attributes: PrimitiveAttributes;
+  attributes: IPrimitiveAttributes;
   /** Vertex count */
   vertexCount: number;
   /** Face count */

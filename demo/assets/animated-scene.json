@@ -1,0 +1,246 @@
+{
+  "metadata": {
+    "defaultPrim": "World",
+    "upAxis": "Y",
+    "timeCodesPerSecond": 24,
+    "frameRate": 24,
+    "startTime": 1,
+    "endTime": 100,
+    "authoredBy": "DSL Animation Demo",
+    "created": "2024-01-01T00:00:00Z"
+  },
+  "layer": {
+    "identifier": "animated-scene.usd",
+    "version": "1.0",
+    "comment": "动画场景演示"
+  },
+  "prims": [
+    {
+      "name": "World",
+      "type": "Xform",
+      "xformOpOrder": ["xformOp:translate"],
+      "transform": {
+        "translate": [0, 0, 0]
+      },
+      "children": [
+        {
+          "name": "Camera_Rig",
+          "type": "Xform",
+          "xformOpOrder": ["xformOp:translate", "xformOp:rotateXYZ"],
+          "transform": {
+            "translate": [15, 10, 15],
+            "rotate": [-30, 45, 0]
+          },
+          "children": [
+            {
+              "name": "Camera",
+              "type": "Camera",
+              "attributes": {
+                "projection": "perspective",
+                "horizontalAperture": 36,
+                "verticalAperture": 24,
+                "focalLength": 35,
+                "clippingRange": [0.1, 1000]
+              },
+              "customData": {
+                "animation": {
+                  "orbit": {
+                    "radius": 20,
+                    "height": 10,
+                    "speed": 0.5
+                  }
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lights",
+          "type": "Xform",
+          "children": [
+            {
+              "name": "KeyLight",
+              "type": "Light",
+              "lightType": "distant",
+              "color": [1, 0.95, 0.9],
+              "intensity": 2000,
+              "exposure": 0,
+              "transform": {
+                "translate": [5, 10, 5],
+                "rotate": [-45, -45, 0]
+              },
+              "shadow": {
+                "enable": true,
+                "type": "pcfSoft",
+                "resolution": [2048, 2048]
+              },
+              "customData": {
+                "animation": {
+                  "rotate": {
+                    "axis": [0, 1, 0],
+                    "speed": 0.2
+                  }
+                }
+              }
+            },
+            {
+              "name": "FillLight",
+              "type": "Light",
+              "lightType": "sphere",
+              "color": [0.8, 0.9, 1],
+              "intensity": 500,
+              "radius": 0.5,
+              "transform": {
+                "translate": [-5, 5, -5]
+              },
+              "shadow": {
+                "enable": false
+              }
+            }
+          ]
+        },
+        {
+          "name": "RotatingCube",
+          "type": "Xform",
+          "xformOpOrder": ["xformOp:translate", "xformOp:rotateXYZ", "xformOp:scale"],
+          "transform": {
+            "translate": [0, 1, 0],
+            "rotate": [0, 0, 0],
+            "scale": [2, 2, 2]
+          },
+          "customData": {
+            "animation": {
+              "rotation": {
+                "axis": "Y",
+                "speed": 30
+              },
+              "bounce": {
+                "amplitude": 1,
+                "frequency": 2
+              }
+            }
+          },
+          "children": [
+            {
+              "name": "CubeGeometry",
+              "type": "Mesh",
+              "purpose": "default",
+              "points": [
+                [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [-0.5, -0.5, 0.5],
+                [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]
+              ],
+              "faceVertexCounts": [4, 4, 4, 4, 4, 4],
+              "faceVertexIndices": [
+                0, 1, 2, 3, 4, 5, 6, 7, 0, 4, 5, 1,
+                1, 5, 6, 2, 2, 6, 7, 3, 3, 7, 4, 0
+              ],
+              "normals": {
+                "values": [
+                  [0, -1, 0], [0, -1, 0], [0, -1, 0], [0, -1, 0],
+                  [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
+                  [-1, 0, 0], [-1, 0, 0], [-1, 0, 0], [-1, 0, 0],
+                  [1, 0, 0], [1, 0, 0], [1, 0, 0], [1, 0, 0],
+                  [0, 0, -1], [0, 0, -1], [0, 0, -1], [0, 0, -1],
+                  [0, 0, 1], [0, 0, 1], [0, 0, 1], [0, 0, 1]
+                ],
+                "interpolation": "uniform"
+              }
+            }
+          ]
+        },
+        {
+          "name": "BouncingSphere",
+          "type": "Xform",
+          "xformOpOrder": ["xformOp:translate", "xformOp:scale"],
+          "transform": {
+            "translate": [3, 3, 0],
+            "scale": [1, 1, 1]
+          },
+          "customData": {
+            "animation": {
+              "bounce": {
+                "startY": 3,
+                "height": 3,
+                "duration": 2
+              },
+              "scale": {
+                "min": 0.8,
+                "max": 1.2,
+                "frequency": 3
+              }
+            }
+          },
+          "children": [
+            {
+              "name": "SphereGeometry",
+              "type": "Mesh",
+              "purpose": "default",
+              "subdivisionScheme": "catmullClark",
+              "customData": {
+                "geometry": {
+                  "type": "sphere",
+                  "radius": 1,
+                  "segments": 32
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "OrbitingTorus",
+          "type": "Xform",
+          "xformOpOrder": ["xformOp:translate", "xformOp:rotateXYZ"],
+          "transform": {
+            "translate": [0, 2, -5],
+            "rotate": [0, 0, 0]
+          },
+          "customData": {
+            "animation": {
+              "orbit": {
+                "radius": 4,
+                "center": [0, 2, 0],
+                "speed": 1
+              }
+            }
+          },
+          "children": [
+            {
+              "name": "TorusGeometry",
+              "type": "Mesh",
+              "purpose": "default",
+              "customData": {
+                "geometry": {
+                  "type": "torus",
+                  "radius": 1,
+                  "tube": 0.3,
+                  "radialSegments": 16,
+                  "tubularSegments": 100
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ground",
+          "type": "Mesh",
+          "purpose": "default",
+          "points": [
+            [-10, 0, -10], [10, 0, -10], [10, 0, 10], [-10, 0, 10]
+          ],
+          "faceVertexCounts": [4],
+          "faceVertexIndices": [0, 1, 2, 3],
+          "normals": {
+            "values": [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]],
+            "interpolation": "uniform"
+          },
+          "primvars": {
+            "st": {
+              "values": [[0, 0], [10, 0], [10, 10], [0, 10]],
+              "interpolation": "vertex"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

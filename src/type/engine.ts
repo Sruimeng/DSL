@@ -7,7 +7,7 @@
  */
 
 import type { RendererSettings, USDRenderer } from './renderer';
-import type { SceneState, USDScene } from './scene';
+import type { ISceneState, IUSDScene } from './scene';
 
 /**
  * 通用参数类型
@@ -257,7 +257,7 @@ export interface EngineState {
   /** Is engine paused */
   isPaused: boolean;
   /** Current scene state */
-  scene: SceneState;
+  scene: ISceneState;
   /** Engine configuration */
   config: EngineConfig;
   /** Engine statistics */
@@ -277,7 +277,7 @@ export interface DSLEngine {
   /** Initialize engine with configuration */
   initialize(config: EngineConfig): Promise<void>;
   /** Load USD scene */
-  loadDSL(dslJson: USDScene): Promise<void>;
+  loadDSL(dslJson: IUSDScene): Promise<void>;
   /** Unload current scene */
   unloadDSL(): Promise<void>;
   /** Start engine */

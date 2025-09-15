@@ -5,7 +5,7 @@
  * 着色器、纹理和材质属性。
  */
 
-import type { USDPrim } from './scene';
+import type { IUSDPrim } from './scene';
 
 /**
  * Material model types
@@ -134,7 +134,7 @@ export interface CustomShader {
 /**
  * Material prim interface
  */
-export interface MaterialPrim extends USDPrim {
+export interface IMaterialPrim extends IUSDPrim {
   type: 'Material';
   /** Material model */
   model: MaterialModel;
@@ -208,7 +208,7 @@ export interface MaterialCollection {
   /** Collection name */
   name: string;
   /** Base material */
-  base: MaterialPrim;
+  base: IMaterialPrim;
   /** Material variants */
   variants: MaterialVariant[];
 }
@@ -237,7 +237,7 @@ export interface MaterialLibrary {
   /** Library name */
   name: string;
   /** Materials in library */
-  materials: Record<string, MaterialPrim>;
+  materials: Record<string, IMaterialPrim>;
   /** Material collections */
   collections: Record<string, MaterialCollection>;
   /** Material lookups */

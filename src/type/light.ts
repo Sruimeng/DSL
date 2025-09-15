@@ -5,7 +5,7 @@
  * 阴影属性和光传输配置。
  */
 
-import type { USDPrim } from './scene';
+import type { IUSDPrim } from './scene';
 
 /**
  * Light types
@@ -80,7 +80,7 @@ export interface GoboConfig {
 /**
  * Light base interface
  */
-export interface LightPrim extends USDPrim {
+export interface ILightPrim extends IUSDPrim {
   type: 'Light';
   /** Light type */
   lightType: LightType;
@@ -131,7 +131,7 @@ export interface LightFilter {
 /**
  * Distant light (directional)
  */
-export interface DistantLight extends LightPrim {
+export interface IDistantLight extends ILightPrim {
   lightType: 'distant';
   /** Light angle (degrees) */
   angle: number;
@@ -140,7 +140,7 @@ export interface DistantLight extends LightPrim {
 /**
  * Sphere light (point light)
  */
-export interface SphereLight extends LightPrim {
+export interface ISphereLight extends ILightPrim {
   lightType: 'sphere';
   /** Light radius */
   radius: number;
@@ -153,7 +153,7 @@ export interface SphereLight extends LightPrim {
 /**
  * Disk light
  */
-export interface DiskLight extends LightPrim {
+export interface IDiskLight extends ILightPrim {
   lightType: 'disk';
   /** Disk radius */
   radius: number;
@@ -166,7 +166,7 @@ export interface DiskLight extends LightPrim {
 /**
  * Rectangle light (area light)
  */
-export interface RectLight extends LightPrim {
+export interface IRectLight extends ILightPrim {
   lightType: 'rect';
   /** Rectangle width */
   width: number;
@@ -183,7 +183,7 @@ export interface RectLight extends LightPrim {
 /**
  * Cylinder light
  */
-export interface CylinderLight extends LightPrim {
+export interface ICylinderLight extends ILightPrim {
   lightType: 'cylinder';
   /** Cylinder radius */
   radius: number;
@@ -198,7 +198,7 @@ export interface CylinderLight extends LightPrim {
 /**
  * Geometry light (mesh light)
  */
-export interface GeometryLight extends LightPrim {
+export interface IGeometryLight extends ILightPrim {
   lightType: 'geometry';
   /** Reference to geometry prim */
   geometry: string;
@@ -241,7 +241,7 @@ export interface LightRig {
   /** Rig type */
   type: 'studio' | 'natural' | 'volumetric' | 'custom';
   /** Lights in rig */
-  lights: LightPrim[];
+  lights: ILightPrim[];
   /** Rig settings */
   settings?: {
     intensityMultiplier?: number;

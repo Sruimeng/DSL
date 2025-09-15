@@ -1,129 +1,116 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 /**
- * 通用工具类型定义
- *
- * 定义 DSL 系统中使用的通用工具、助手
- * 和共享接口的类型。
+ * 通用类型定义
+ * 定义 DSL 系统的基础类型和工具类型
  */
 
-/**
- * Color representation
- */
-export type Color = [number, number, number] | [number, number, number, number];
-
-/**
- * Vector types
- */
-export type Vector2 = [number, number];
-export type Vector3 = [number, number, number];
-export type Vector4 = [number, number, number, number];
-
-/**
- * Matrix types
- */
-export type Matrix3 = number[];
-export type Matrix4 = number[];
-
-/**
- * Quaternion type
- */
-export type Quaternion = [number, number, number, number];
-
-/**
- * Euler angles type
- */
-export type Euler = [number, number, number];
-
-/**
- * Bounds/AABB type
- */
-export interface Bounds {
-  min: Vector3;
-  max: Vector3;
-  center: Vector3;
-  size: Vector3;
+// 基础数学类型
+export interface IVector2 {
+  x: number;
+  y: number;
 }
 
-/**
- * Sphere bounds type
- */
-export interface SphereBounds {
-  center: Vector3;
-  radius: number;
+export interface IVector3 {
+  x: number;
+  y: number;
+  z: number;
 }
 
-/**
- * Ray type
- */
-export interface Ray {
-  origin: Vector3;
-  direction: Vector3;
+export interface IVector4 {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
 }
 
-/**
- * Plane type
- */
-export interface Plane {
-  normal: Vector3;
-  constant: number;
+// 颜色类型
+export type IColorRGB = [number, number, number];
+export type IColorRGBA = [number, number, number, number];
+export type IColor = IColorRGB | IColorRGBA | string;
+
+// 矩阵类型
+export type IMatrix3 = [number, number, number, number, number, number, number, number, number];
+
+export type IMatrix4 = [
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+  number,
+];
+
+// 四元数和欧拉角
+export interface IQuaternion {
+  x: number;
+  y: number;
+  z: number;
+  w: number;
 }
 
-/**
- * Transform interface
- */
-export interface Transform {
-  /** Position */
-  position: Vector3;
-  /** Rotation in degrees */
-  rotation: Euler;
-  /** Scale */
-  scale: Vector3;
-  /** Optional quaternion */
-  quaternion?: Quaternion;
-  /** Optional matrix */
-  matrix?: Matrix4;
+export interface IEuler {
+  x: number; // 弧度
+  y: number; // 弧度
+  z: number; // 弧度
+  order?: 'XYZ' | 'YZX' | 'ZXY' | 'XZY' | 'YXZ' | 'ZYX';
 }
 
-/**
- * Size interface
- */
-export interface Size {
+// 变换类型
+export interface IXformTransform {
+  translate?: IVector3;
+  rotate?: IVector3; // 欧拉角（度数）
+  scale?: IVector3;
+  pivot?: IVector3;
+  matrix?: IMatrix4;
+}
+
+// 边界框
+export interface IBounds {
+  min: IVector3;
+  max: IVector3;
+  center: IVector3;
+  size: IVector3;
+}
+
+// 尺寸和矩形
+export interface ISize {
   width: number;
   height: number;
 }
 
-/**
- * Rectangle interface
- */
-export interface Rect {
+export interface IRect {
   x: number;
   y: number;
   width: number;
   height: number;
 }
 
-/**
- * Time range
- */
-export interface TimeRange {
-  start: number;
-  end: number;
+// 时间相关
+export interface ITimeCode {
+  value: number;
+  unit: 'frames' | 'seconds' | 'minutes';
 }
 
-/**
- ** Version type
- */
-export interface Version {
-  major: number;
-  minor: number;
-  patch: number;
-  label?: string;
+export interface ITimeRange {
+  start: ITimeCode;
+  end: ITimeCode;
 }
 
-/**
- * Error types
- */
-export enum ErrorType {
+// 参数类型 - 改进类型安全
+export type IParams = Record<string, any>;
+
+// 错误处理
+export enum IErrorType {
   LOADING = 'LOADING',
   PARSING = 'PARSING',
   VALIDATION = 'VALIDATION',
@@ -133,44 +120,53 @@ export enum ErrorType {
   UNKNOWN = 'UNKNOWN',
 }
 
-/**
- * Custom error class
- */
-export class DSLError extends Error {
-  constructor(
-    public type: ErrorType,
-    message: string,
-    public cause?: Error,
-    public context?: unknown,
-  ) {
-    super(message);
-    this.name = 'DSLError';
-    this.stack = cause?.stack || this.stack;
-  }
+export interface IError {
+  type: IErrorType;
+  message: string;
+  details?: unknown;
+  stack?: string;
+  cause?: IError;
 }
 
-/**
- * Result type for operations
- */
-export interface Result<T> {
+// 操作结果
+export interface IResult<T = unknown> {
   success: boolean;
   data?: T;
-  error?: {
-    type: ErrorType;
-    message: string;
-    details?: unknown;
-  };
+  error?: IError;
+  warnings?: string[];
 }
 
-/**
- * Progress callback type
- */
-export type ProgressCallback = (progress: number, message?: string) => void;
+// 事件系统
+export type IEventType = string;
 
-/**
- * Async job status
- */
-export enum JobStatus {
+export interface IEventData {
+  [key: string]: unknown;
+}
+
+export interface IEventHandler<T extends IEventData = IEventData> {
+  (data: T): void | Promise<void>;
+}
+
+export interface IEventEmitter {
+  on<T extends IEventData>(event: string, handler: IEventHandler<T>): this;
+  once<T extends IEventData>(event: string, handler: IEventHandler<T>): this;
+  off(event: string, handler: IEventHandler): this;
+  emit<T extends IEventData>(event: string, data: T): boolean;
+  removeAllListeners(event?: string): this;
+}
+
+// 进度相关
+export interface IProgress {
+  current: number;
+  total: number;
+  percentage: number;
+  message?: string;
+}
+
+export type IProgressCallback = (progress: IProgress) => void;
+
+// 异步作业
+export enum IJobStatus {
   PENDING = 'PENDING',
   RUNNING = 'RUNNING',
   COMPLETED = 'COMPLETED',
@@ -178,54 +174,19 @@ export enum JobStatus {
   CANCELLED = 'CANCELLED',
 }
 
-/**
- * Job interface for async operations
- */
-export interface Job<T = unknown> {
-  /** Job ID */
+export interface IJob<T = unknown> {
   id: string;
-  /** Job name */
   name: string;
-  /** Job status */
-  status: JobStatus;
-  /** Progress (0-1) */
+  status: IJobStatus;
   progress: number;
-  /** Job result */
   result?: T;
-  /** Job error */
-  error?: Error;
-  /** Cancel job */
+  error?: IError;
   cancel(): void;
-  /** Wait for completion */
   wait(): Promise<T>;
 }
 
-/**
- ** Job queue interface
- */
-export interface JobQueue {
-  /** Add job to queue */
-  add<T>(name: string, task: () => Promise<T>, priority?: number): Job<T>;
-  /** Get job by ID */
-  get(id: string): Job | undefined;
-  /** Cancel job */
-  cancel(id: string): boolean;
-  /** Clear all jobs */
-  clear(): void;
-  /** Get queue statistics */
-  getStats(): {
-    total: number;
-    pending: number;
-    running: number;
-    completed: number;
-    failed: number;
-  };
-}
-
-/**
- * Resource types
- */
-export enum ResourceType {
+// 资源管理
+export enum IResourceType {
   TEXTURE = 'TEXTURE',
   GEOMETRY = 'GEOMETRY',
   MATERIAL = 'MATERIAL',
@@ -237,39 +198,21 @@ export enum ResourceType {
   BINARY = 'BINARY',
 }
 
-/**
- * Resource cache entry
- */
-export interface CacheEntry<T> {
-  /** Resource ID */
+export interface ICacheEntry<T> {
   id: string;
-  /** Resource type */
-  type: ResourceType;
-  /** Resource data */
+  type: IResourceType;
   data: T;
-  /** Last access time */
   lastAccess: number;
-  /** Size in bytes */
   size: number;
-  /** Reference count */
   refCount: number;
 }
 
-/**
- ** Resource manager interface
- */
-export interface ResourceManager {
-  /** Load resource */
-  load<T>(path: string, type: ResourceType, options?: unknown): Promise<T>;
-  /** Get cached resource */
+export interface IResourceManager {
+  load<T>(path: string, type: IResourceType, options?: unknown): Promise<T>;
   get<T>(id: string): T | undefined;
-  /** Cache resource */
-  cache<T>(id: string, resource: T, type: ResourceType): void;
-  /** Release resource */
+  cache<T>(id: string, resource: T, type: IResourceType): void;
   release(id: string): void;
-  /** Clear all resources */
   clear(): void;
-  /** Get cache statistics */
   getStats(): {
     totalSize: number;
     itemCount: number;
@@ -278,124 +221,116 @@ export interface ResourceManager {
   };
 }
 
-/**
- * Event emitter interface
- */
-export interface EventEmitter {
-  /** Add event listener */
-  on(event: string, listener: Function): this;
-  /** Add one-time event listener */
-  once(event: string, listener: Function): this;
-  /** Remove event listener */
-  off(event: string, listener: Function): this;
-  /** Emit event */
-  emit(event: string, ...args: unknown[]): boolean;
-  /** Remove all listeners */
-  removeAllListeners(event?: string): this;
-  /** Get listener count */
-  listenerCount(event: string): number;
+// 生命周期
+export type ILifecycleEvent =
+  | 'created'
+  | 'initialized'
+  | 'started'
+  | 'stopped'
+  | 'paused'
+  | 'resumed'
+  | 'destroyed';
+
+// 变更类型
+export type IChangeType = 'add' | 'remove' | 'modify' | 'replace';
+
+export interface IChangeRecord {
+  type: IChangeType;
+  target: string;
+  path: string;
+  oldValue?: unknown;
+  newValue?: unknown;
+  timestamp: number;
 }
 
-/**
- ** Utility functions
- */
-export interface Utils {
-  /** Generate UUID */
-  uuid(): string;
-  /** Get current timestamp */
-  now(): number;
-  /** Clamp value between min and max */
-  clamp(value: number, min: number, max: number): number;
-  /** Linear interpolation */
-  lerp(start: number, end: number, t: number): number;
-  /** Convert degrees to radians */
-  degToRad(degrees: number): number;
-  /** Convert radians to degrees */
-  radToDeg(radians: number): number;
-  /** Deep clone object */
-  deepClone<T>(obj: T): T;
-  /** Merge objects */
-  merge<T>(target: T, source: Partial<T>): T;
-  /** Parse URL */
-  parseUrl(url: string): {
-    protocol: string;
-    host: string;
-    path: string;
-    query: Record<string, string>;
-    hash: string;
-  };
-  /** Format bytes */
-  formatBytes(bytes: number, decimals?: number): string;
-  /** Format time */
-  formatTime(seconds: number): string;
-  /** Debounce function */
-  debounce<T extends Function>(func: T, wait: number): T;
-  /** Throttle function */
-  throttle<T extends Function>(func: T, limit: number): T;
+// 验证
+export interface IValidationResult {
+  isValid: boolean;
+  errors: string[];
+  warnings?: string[];
 }
 
-/**
- * Configuration interface
- */
-export interface Config {
-  /** Get configuration value */
-  get<T>(key: string, defaultValue?: T): T;
-  /** Set configuration value */
-  set(key: string, value: unknown): void;
-  /** Check if key exists */
-  has(key: string): boolean;
-  /** Delete configuration key */
-  delete(key: string): boolean;
-  /** Get all configuration */
-  all(): Record<string, unknown>;
-  /** Load configuration from object */
-  load(config: Record<string, unknown>): void;
-  /** Save configuration to storage */
-  save(): void;
-  /** Reset to defaults */
-  reset(): void;
+export interface IValidatable {
+  validate(): IValidationResult;
 }
 
-/**
- ** Performance monitor interface
- */
-export interface PerformanceMonitor {
-  /** Start measuring */
-  start(label: string): void;
-  /** End measuring */
-  end(label: string): number;
-  /** Mark timestamp */
-  mark(label: string): void;
-  /** Measure between marks */
-  measure(name: string, startMark: string, endMark: string): number;
-  /** Get measures */
-  getMeasures(): Record<string, number>;
-  /** Clear all measures */
-  clear(): void;
+// 序列化
+export interface ISerializable<T = unknown> {
+  serialize(): T;
+  deserialize(data: T): void;
 }
 
-/**
- * Disposable interface for cleanup
- */
-export interface Disposable {
-  /** Dispose resources */
+// 可释放资源
+export interface IDisposable {
   dispose(): void;
 }
 
-/**
- * Validatable interface
- */
-export interface Validatable {
-  /** Validate object */
-  validate(): Result<boolean>;
+// 配置
+export interface IConfig {
+  get<T>(key: string, defaultValue?: T): T;
+  set(key: string, value: unknown): void;
+  has(key: string): boolean;
+  delete(key: string): boolean;
+  all(): Record<string, unknown>;
+  load(config: Record<string, unknown>): void;
+  save(): void;
+  reset(): void;
 }
 
-/**
- * Serializable interface
- */
-export interface Serializable<T = unknown> {
-  /** Serialize to JSON */
-  serialize(): T;
-  /** Deserialize from JSON */
-  deserialize(data: T): void;
+// 性能监控
+export interface IPerformanceMonitor {
+  start(label: string): void;
+  end(label: string): number;
+  mark(label: string): void;
+  measure(name: string, startMark: string, endMark: string): number;
+  getMeasures(): Record<string, number>;
+  clear(): void;
+}
+
+// 工具类型
+export type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
+export type RequiredFields<T, K extends keyof T> = T & Required<Pick<T, K>>;
+
+export type OmitFields<T, K extends keyof T> = Omit<T, K>;
+
+// 类型守卫
+export type ITypeGuard<T> = (value: unknown) => value is T;
+
+// 版本信息
+export interface IVersion {
+  major: number;
+  minor: number;
+  patch: number;
+  label?: string;
+}
+
+// 自定义错误类
+export class DSLError extends Error {
+  constructor(
+    public type: IErrorType,
+    message: string,
+    public cause?: Error,
+    public context?: unknown,
+  ) {
+    super(message);
+    this.name = 'DSLError';
+    this.stack = cause?.stack || this.stack;
+  }
+}
+
+// 工具函数集合
+export interface IUtils {
+  uuid(): string;
+  now(): number;
+  clamp(value: number, min: number, max: number): number;
+  lerp(start: number, end: number, t: number): number;
+  degToRad(degrees: number): number;
+  radToDeg(radians: number): number;
+  deepClone<T>(obj: T): T;
+  merge<T>(target: T, source: Partial<T>): T;
+  debounce<T extends Function>(func: T, wait: number): T;
+  throttle<T extends Function>(func: T, limit: number): T;
 }

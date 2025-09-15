@@ -5,19 +5,21 @@
  * 和场景级属性。
  */
 
+import type { IMatrix4, IVector3 } from './common';
+
 /**
  * 基本 USD Prim 类型标识符
  */
-export type PrimType = 'Xform' | 'Mesh' | 'Camera' | 'Light' | 'Material' | 'Scope' | 'GeomSubset';
+export type IPrimType = 'Xform' | 'Mesh' | 'Camera' | 'Light' | 'Material' | 'Scope' | 'GeomSubset';
 
 /**
  * 所有 USD Prim 的基础接口
  */
-export interface USDPrim {
+export interface IUSDPrim {
   /** 此 Prim 的唯一标识符 */
   name: string;
   /** Prim 类型 */
-  type: PrimType | string;
+  type: IPrimType | string;
   /** 父 Prim 路径 */
   parent?: string;
   /** 此 Prim 是否激活 */
@@ -31,33 +33,33 @@ export interface USDPrim {
 /**
  * Xform Prim 的变换属性
  */
-export interface XformTransform {
+export interface IPrimTransform {
   /** 3D 空间中的平移 */
-  translate?: [number, number, number];
+  translate?: IVector3;
   /** 欧拉角旋转（度） */
-  rotate?: [number, number, number];
+  rotate?: IVector3;
   /** 缩放因子 */
-  scale?: [number, number, number];
+  scale?: IVector3;
   /** 旋转枢轴 */
-  pivot?: [number, number, number];
-  /** 变换矩阵（16 个值，行主序） */
-  matrix?: number[];
+  pivot?: IVector3;
+  /** 变换矩阵 */
+  matrix?: IMatrix4;
 }
 
 /**
  * Xform Prim - 定义变换层级
  */
-export interface XformPrim extends USDPrim {
+export interface IXformPrim extends IUSDPrim {
   type: 'Xform';
   /** 变换操作顺序 */
   xformOpOrder?: string[];
-  transform?: XformTransform;
+  transform?: IPrimTransform;
 }
 
 /**
  * 对另一个 Prim 或外部资产的引用
  */
-export interface Reference {
+export interface IReference {
   /** 被引用 Prim 的路径 */
   path: string;
   /** 可选的层偏移用于时间重映射 */
@@ -70,7 +72,7 @@ export interface Reference {
 /**
  * Payload 组合的载荷
  */
-export interface Payload {
+export interface IPayload {
   /** 包含载荷的资产路径 */
   assetPath: string;
   /** 资产内的 Prim 路径 */
@@ -80,35 +82,35 @@ export interface Payload {
 /**
  * Scope Prim - 组织容器
  */
-export interface ScopePrim extends USDPrim {
+export interface IScopePrim extends IUSDPrim {
   type: 'Scope';
   /** 子 Prim */
-  children?: USDPrim[];
+  children?: IUSDPrim[];
   /** 对其他 Scope 的引用 */
-  references?: Reference[];
+  references?: IReference[];
   /** Payload 引用 */
-  payload?: Payload[];
+  payload?: IPayload[];
 }
 
 /**
  * Prim 的用途分类
  */
-export type Purpose = 'default' | 'render' | 'proxy' | 'guide';
+export type IPurpose = 'default' | 'render' | 'proxy' | 'guide';
 
 /**
  * 3D 空间中的边界范围
  */
-export interface Extent {
+export interface IExtent {
   /** 最小角 */
-  min: [number, number, number];
+  min: IVector3;
   /** 最大角 */
-  max: [number, number, number];
+  max: IVector3;
 }
 
 /**
  * GeomSubset - 定义几何体子集
  */
-export interface GeomSubsetPrim extends USDPrim {
+export interface IGeomSubsetPrim extends IUSDPrim {
   type: 'GeomSubset';
   /** 子集类型 */
   elementType: 'face' | 'point' | 'vertex';
@@ -121,7 +123,7 @@ export interface GeomSubsetPrim extends USDPrim {
 /**
  * 场景级元数据
  */
-export interface SceneMetadata {
+export interface ISceneMetadata {
   /** 场景中的默认 Prim */
   defaultPrim?: string;
   /** 上轴方向 */
@@ -147,7 +149,7 @@ export interface SceneMetadata {
 /**
  * 层信息
  */
-export interface Layer {
+export interface ILayer {
   /** 层标识符 */
   identifier: string;
   /** 层版本 */
@@ -161,29 +163,29 @@ export interface Layer {
 /**
  * 完整的 USD 场景描述
  */
-export interface USDScene {
+export interface IUSDScene {
   /** 场景元数据 */
-  metadata?: SceneMetadata;
+  metadata?: ISceneMetadata;
   /** 层信息 */
-  layer?: Layer;
+  layer?: ILayer;
   /** 场景中的根 Prim */
-  prims: USDPrim[];
+  prims: IUSDPrim[];
   /** 全局用途 */
-  purpose?: Purpose;
+  purpose?: IPurpose;
   /** 场景范围 */
-  extent?: Extent;
+  extent?: IExtent;
 }
 
 /**
  * DSL 引擎的场景状态
  */
-export interface SceneState {
+export interface ISceneState {
   /** 当前场景对象 */
   objects: Map<string, unknown>;
   /** 活动相机 */
   activeCamera?: string;
   /** 场景边界 */
-  bounds?: Extent;
+  bounds?: IExtent;
   /** 当前时间 */
   currentTime: number;
   /** 场景是否已加载 */

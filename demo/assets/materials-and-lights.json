@@ -1,0 +1,342 @@
+{
+  "metadata": {
+    "defaultPrim": "World",
+    "upAxis": "Y",
+    "timeCodesPerSecond": 24,
+    "authoredBy": "DSL Materials & Lights Demo",
+    "created": "2024-01-01T00:00:00Z"
+  },
+  "layer": {
+    "identifier": "materials-and-lights.usd",
+    "version": "1.0",
+    "comment": "材质与光源演示"
+  },
+  "prims": [
+    {
+      "name": "World",
+      "type": "Xform",
+      "xformOpOrder": ["xformOp:translate"],
+      "transform": {
+        "translate": [0, 0, 0]
+      },
+      "children": [
+        {
+          "name": "Camera",
+          "type": "Camera",
+          "attributes": {
+            "projection": "perspective",
+            "horizontalAperture": 36,
+            "verticalAperture": 24,
+            "focalLength": 50,
+            "clippingRange": [0.1, 1000]
+          },
+          "transform": {
+            "translate": [0, 5, 15],
+            "rotate": [-20, 0, 0]
+          }
+        },
+        {
+          "name": "Environment",
+          "type": "Light",
+          "lightType": "dome",
+          "color": [0.8, 0.9, 1],
+          "intensity": 0.5,
+          "exposure": 0,
+          "enablePortals": false,
+          "format": "latlong",
+          "visibility": {
+            "camera": false,
+            "reflections": true,
+            "refractions": false,
+            "diffuse": 0.3,
+            "specular": 1
+          }
+        },
+        {
+          "name": "Lights",
+          "type": "Xform",
+          "children": [
+            {
+              "name": "MainLight",
+              "type": "Light",
+              "lightType": "distant",
+              "color": [1, 0.95, 0.85],
+              "intensity": 1500,
+              "exposure": 0,
+              "angle": 0.5,
+              "transform": {
+                "translate": [5, 10, 5],
+                "rotate": [-45, -45, 0]
+              },
+              "shadow": {
+                "enable": true,
+                "type": "pcfSoft",
+                "resolution": [2048, 2048],
+                "bias": 0.001,
+                "softness": 1
+              }
+            },
+            {
+              "name": "RimLight",
+              "type": "Light",
+              "lightType": "distant",
+              "color": [0.8, 0.9, 1],
+              "intensity": 800,
+              "exposure": 0,
+              "transform": {
+                "translate": [-5, 8, -5],
+                "rotate": [-60, 135, 0]
+              },
+              "shadow": {
+                "enable": false
+              }
+            },
+            {
+              "name": "PointLight_Red",
+              "type": "Light",
+              "lightType": "sphere",
+              "color": [1, 0.2, 0.2],
+              "intensity": 300,
+              "radius": 0.1,
+              "treatAsArea": true,
+              "transform": {
+                "translate": [3, 2, 3]
+              },
+              "shadow": {
+                "enable": true,
+                "type": "hard",
+                "resolution": [512, 512]
+              }
+            },
+            {
+              "name": "PointLight_Blue",
+              "type": "Light",
+              "lightType": "sphere",
+              "color": [0.2, 0.2, 1],
+              "intensity": 300,
+              "radius": 0.1,
+              "treatAsArea": true,
+              "transform": {
+                "translate": [-3, 2, 3]
+              },
+              "shadow": {
+                "enable": true,
+                "type": "hard",
+                "resolution": [512, 512]
+              }
+            },
+            {
+              "name": "SpotLight",
+              "type": "Light",
+              "lightType": "disk",
+              "color": [1, 1, 0.9],
+              "intensity": 1000,
+              "radius": 0.5,
+              "normal": [0, -1, 0],
+              "transform": {
+                "translate": [0, 8, 0],
+                "rotate": [90, 0, 0]
+              },
+              "shadow": {
+                "enable": true,
+                "type": "pcf",
+                "resolution": [1024, 1024]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MaterialLibrary",
+          "type": "Scope",
+          "children": [
+            {
+              "name": "Gold",
+              "type": "Material",
+              "model": "usdPreviewSurface",
+              "previewSurface": {
+                "diffuseColor": [1, 0.71, 0.29],
+                "metallic": 1,
+                "roughness": 0.2,
+                "ior": 2.5
+              }
+            },
+            {
+              "name": "Silver",
+              "type": "Material",
+              "model": "usdPreviewSurface",
+              "previewSurface": {
+                "diffuseColor": [0.97, 0.96, 0.91],
+                "metallic": 1,
+                "roughness": 0.1,
+                "ior": 2.5
+              }
+            },
+            {
+              "name": "Plastic_Red",
+              "type": "Material",
+              "model": "usdPreviewSurface",
+              "previewSurface": {
+                "diffuseColor": [1, 0, 0],
+                "metallic": 0,
+                "roughness": 0.5,
+                "ior": 1.5
+              }
+            },
+            {
+              "name": "Plastic_Blue",
+              "type": "Material",
+              "model": "usdPreviewSurface",
+              "previewSurface": {
+                "diffuseColor": [0, 0.2, 1],
+                "metallic": 0,
+                "roughness": 0.3,
+                "ior": 1.5
+              }
+            },
+            {
+              "name": "Glass",
+              "type": "Material",
+              "model": "usdPreviewSurface",
+              "previewSurface": {
+                "diffuseColor": [0.9, 0.9, 1],
+                "metallic": 0,
+                "roughness": 0,
+                "opacity": 0.3,
+                "opacityThreshold": 0.01,
+                "ior": 1.5
+              }
+            },
+            {
+              "name": "Wood",
+              "type": "Material",
+              "model": "usdPreviewSurface",
+              "previewSurface": {
+                "diffuseColor": [0.6, 0.4, 0.2],
+                "metallic": 0,
+                "roughness": 0.8,
+                "normal": {
+                  "asset": "textures/wood_normal.png",
+                  "wrap": "repeat"
+                }
+              }
+            },
+            {
+              "name": "Metal_Rust",
+              "type": "Material",
+              "model": "usdPreviewSurface",
+              "previewSurface": {
+                "diffuseColor": [0.5, 0.3, 0.2],
+                "metallic": 0.8,
+                "roughness": 0.7,
+                "normal": {
+                  "asset": "textures/rust_normal.png",
+                  "wrap": "repeat"
+                },
+                "roughness": {
+                  "asset": "textures/rust_roughness.png",
+                  "wrap": "repeat"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "Objects",
+          "type": "Xform",
+          "transform": {
+            "translate": [0, 1, 0]
+          },
+          "children": [
+            {
+              "name": "Sphere_Gold",
+              "type": "Xform",
+              "transform": {
+                "translate": [-3, 0, 0]
+              },
+              "children": [
+                {
+                  "name": "Sphere",
+                  "type": "Mesh",
+                  "purpose": "default",
+                  "customData": {
+                    "geometry": {
+                      "type": "sphere",
+                      "radius": 1,
+                      "segments": 32
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "Cube_Silver",
+              "type": "Xform",
+              "transform": {
+                "translate": [0, 0, 0]
+              },
+              "children": [
+                {
+                  "name": "Cube",
+                  "type": "Mesh",
+                  "purpose": "default",
+                  "points": [
+                    [-0.5, -0.5, -0.5], [0.5, -0.5, -0.5], [0.5, -0.5, 0.5], [-0.5, -0.5, 0.5],
+                    [-0.5, 0.5, -0.5], [0.5, 0.5, -0.5], [0.5, 0.5, 0.5], [-0.5, 0.5, 0.5]
+                  ],
+                  "faceVertexCounts": [4, 4, 4, 4, 4, 4],
+                  "faceVertexIndices": [
+                    0, 1, 2, 3, 4, 7, 6, 5, 0, 4, 5, 1,
+                    1, 5, 6, 2, 2, 6, 7, 3, 3, 7, 4, 0
+                  ]
+                }
+              ]
+            },
+            {
+              "name": "Torus_Glass",
+              "type": "Xform",
+              "transform": {
+                "translate": [3, 0, 0]
+              },
+              "children": [
+                {
+                  "name": "Torus",
+                  "type": "Mesh",
+                  "purpose": "default",
+                  "customData": {
+                    "geometry": {
+                      "type": "torus",
+                      "radius": 1,
+                      "tube": 0.3,
+                      "radialSegments": 16,
+                      "tubularSegments": 100
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Ground",
+          "type": "Mesh",
+          "purpose": "default",
+          "points": [
+            [-10, 0, -10], [10, 0, -10], [10, 0, 10], [-10, 0, 10]
+          ],
+          "faceVertexCounts": [4],
+          "faceVertexIndices": [0, 1, 2, 3],
+          "normals": {
+            "values": [[0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]],
+            "interpolation": "uniform"
+          },
+          "primvars": {
+            "st": {
+              "values": [[0, 0], [1, 0], [1, 1], [0, 1]],
+              "interpolation": "vertex"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

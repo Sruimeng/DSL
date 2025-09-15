@@ -5,71 +5,74 @@
  * 曲线、点和其他几何基元。
  */
 
-import type { USDPrim } from './scene';
+import type { IBounds, IMatrix4, IVector3 } from './common';
+import type { IUSDPrim } from './scene';
 
 /**
  * 几何体用途
  */
-export type GeometryPurpose = 'default' | 'proxy' | 'guide' | 'render';
+export type IGeometryPurpose = 'default' | 'proxy' | 'guide' | 'render';
 
 /**
  * 方向类型
  */
-export type Orientation = 'rightHanded' | 'leftHanded';
+export type IOrientation = 'rightHanded' | 'leftHanded';
 
 /**
  * 细分方案
  */
-export type SubdivisionScheme = 'none' | 'catmullClark' | 'loop' | 'bilinear';
+export type ISubdivisionScheme = 'none' | 'catmullClark' | 'loop' | 'bilinear';
 
 /**
  * 面变化插值
  */
-export type FaceVaryingInterpolation = 'uniform' | 'varying' | 'vertex' | 'faceVarying';
+export type IFaceVaryingInterpolation = 'uniform' | 'varying' | 'vertex' | 'faceVarying';
 
 /**
  * 网格几何体接口
  */
-export interface MeshPrim extends USDPrim {
+export interface IMeshPrim extends IUSDPrim {
   type: 'Mesh';
   /** 顶点位置 */
-  points: [number, number, number][];
+  points: IVector3[];
   /** 面顶点数量 */
   faceVertexCounts: number[];
   /** 面顶点索引 */
   faceVertexIndices: number[];
   /** 法线 */
   normals?: {
-    values: [number, number, number][];
-    interpolation?: FaceVaryingInterpolation;
+    values: IVector3[];
+    interpolation?: IFaceVaryingInterpolation;
   };
   /** UV 坐标 */
   primvars?: {
     st?: {
       values: [number, number][];
-      interpolation?: FaceVaryingInterpolation;
+      interpolation?: IFaceVaryingInterpolation;
     };
     uv?: {
       values: [number, number][];
-      interpolation?: FaceVaryingInterpolation;
+      interpolation?: IFaceVaryingInterpolation;
     };
-    [key: string]: {
-      values: unknown[];
-      interpolation?: FaceVaryingInterpolation;
-    };
+    [key: string]:
+      | {
+          values: unknown[];
+          interpolation?: IFaceVaryingInterpolation;
+        }
+      | undefined;
   };
   /** 顶点颜色 */
   displayColor?: {
     values: [number, number, number][];
-    interpolation?: FaceVaryingInterpolation;
+    interpolation?: IFaceVaryingInterpolation;
   };
   /** 顶点不透明度 */
   displayOpacity?: {
     values: number[];
-    interpolation?: FaceVaryingInterpolation;
+    interpolation?: IFaceVaryingInterpolation;
   };
   /** 细分方案 */
-  subdivisionScheme?: SubdivisionScheme;
+  subdivisionScheme?: ISubdivisionScheme;
   /** 折边 */
   creases?: {
     edgeIndices: number[];
@@ -85,20 +88,20 @@ export interface MeshPrim extends USDPrim {
   /** 双面渲染 */
   doubleSided?: boolean;
   /** 方向 */
-  orientation?: Orientation;
+  orientation?: IOrientation;
   /** 用途 */
-  purpose?: GeometryPurpose;
+  purpose?: IGeometryPurpose;
 }
 
 /**
  * 曲线几何体接口
  */
-export interface CurvesPrim extends USDPrim {
+export interface ICurvesPrim extends IUSDPrim {
   type: 'Curves';
   /** 每条曲线的顶点数量 */
   curveVertexCounts: number[];
   /** 曲线顶点 */
-  points: [number, number, number][];
+  points: IVector3[];
   /** 曲线宽度 */
   widths?: {
     values: number[];
@@ -106,8 +109,8 @@ export interface CurvesPrim extends USDPrim {
   };
   /** 曲线法线 */
   normals?: {
-    values: [number, number, number][];
-    interpolation?: FaceVaryingInterpolation;
+    values: IVector3[];
+    interpolation?: IFaceVaryingInterpolation;
   };
   /** 曲线类型 */
   curveType?: 'linear' | 'cubic';
@@ -116,16 +119,16 @@ export interface CurvesPrim extends USDPrim {
   /** 包裹模式 */
   wrap?: 'nonperiodic' | 'periodic' | 'pinned';
   /** 用途 */
-  purpose?: GeometryPurpose;
+  purpose?: IGeometryPurpose;
 }
 
 /**
  * 点几何体接口
  */
-export interface PointsPrim extends USDPrim {
+export interface IPointsPrim extends IUSDPrim {
   type: 'Points';
   /** 点位置 */
-  points: [number, number, number][];
+  points: IVector3[];
   /** 点宽度 */
   widths?: {
     values: number[];
@@ -133,29 +136,29 @@ export interface PointsPrim extends USDPrim {
   };
   /** 点法线 */
   normals?: {
-    values: [number, number, number][];
-    interpolation?: FaceVaryingInterpolation;
+    values: IVector3[];
+    interpolation?: IFaceVaryingInterpolation;
   };
   /** 点 ID */
   ids?: number[];
   /** 点颜色 */
   displayColor?: {
     values: [number, number, number][];
-    interpolation?: FaceVaryingInterpolation;
+    interpolation?: IFaceVaryingInterpolation;
   };
   /** 点不透明度 */
   displayOpacity?: {
     values: number[];
-    interpolation?: FaceVaryingInterpolation;
+    interpolation?: IFaceVaryingInterpolation;
   };
   /** 用途 */
-  purpose?: GeometryPurpose;
+  purpose?: IGeometryPurpose;
 }
 
 /**
  * Volume data interface
  */
-export interface VolumePrim extends USDPrim {
+export interface IVolumePrim extends IUSDPrim {
   type: 'Volume';
   /** Volume file path */
   filePath?: string;
@@ -164,135 +167,36 @@ export interface VolumePrim extends USDPrim {
     [name: string]: {
       type: 'float' | 'vec3f' | 'vec4f';
       dimensions: [number, number, number];
-      data: any[];
+      data: unknown[];
     };
   };
   /** Volume transform */
-  volumeTransform?: number[];
+  volumeTransform?: IMatrix4;
   /** Purpose */
-  purpose?: GeometryPurpose;
+  purpose?: IGeometryPurpose;
 }
 
 /**
  * Instanced geometry interface
  */
-export interface InstancerPrim extends USDPrim {
+export interface IInstancerPrim extends IUSDPrim {
   type: 'Instancer';
   /** Reference prototype */
   prototype: string;
   /** Instance transforms */
-  instanceTransforms: number[][];
+  instanceTransforms: IMatrix4[];
   /** Instance IDs */
   instanceIds?: number[];
   /** Instance visibility */
   instanceVisibility?: boolean[];
   /** Instance purposes */
-  instancePurposes?: GeometryPurpose[];
-}
-
-/**
- * Sphere primitive interface
- */
-export interface SpherePrim extends USDPrim {
-  type: 'Sphere';
-  /** Sphere radius */
-  radius: number;
-  /** Sphere center */
-  center?: [number, number, number];
-  /** Subdivision axis */
-  axis?: [number, number, number];
-  /** Purpose */
-  purpose?: GeometryPurpose;
-}
-
-/**
- * Cube primitive interface
- */
-export interface CubePrim extends USDPrim {
-  type: 'Cube';
-  /** Cube size */
-  size: number;
-  /** Cube extents */
-  extent?: {
-    min: [number, number, number];
-    max: [number, number, number];
-  };
-  /** Purpose */
-  purpose?: GeometryPurpose;
-}
-
-/**
- * Cylinder primitive interface
- */
-export interface CylinderPrim extends USDPrim {
-  type: 'Cylinder';
-  /** Cylinder radius */
-  radius: number;
-  /** Cylinder height */
-  height: number;
-  /** Axis direction */
-  axis?: [number, number, number];
-  /** Purpose */
-  purpose?: GeometryPurpose;
-}
-
-/**
- * Cone primitive interface
- */
-export interface ConePrim extends USDPrim {
-  type: 'Cone';
-  /** Cone radius */
-  radius: number;
-  /** Cone height */
-  height: number;
-  /** Axis direction */
-  axis?: [number, number, number];
-  /** Purpose */
-  purpose?: GeometryPurpose;
-}
-
-/**
- * Capsule primitive interface
- */
-export interface CapsulePrim extends USDPrim {
-  type: 'Capsule';
-  /** Capsule radius */
-  radius: number;
-  /** Capsule height */
-  height: number;
-  /** Axis direction */
-  axis?: [number, number, number];
-  /** Purpose */
-  purpose?: GeometryPurpose;
-}
-
-/**
- * NurbsPatch primitive interface
- */
-export interface NurbsPatchPrim extends USDPrim {
-  type: 'NurbsPatch';
-  /** Control points */
-  points: [number, number, number][];
-  /** U degree */
-  uDegree: number;
-  /** V degree */
-  vDegree: number;
-  /** U knot values */
-  uKnots: number[];
-  /** V knot values */
-  vKnots: number[];
-  /** U form */
-  uForm: 'open' | 'closed' | 'periodic';
-  /** V form */
-  vForm: 'open' | 'closed' | 'periodic';
-  /** Purpose */
-  purpose?: GeometryPurpose;
+  instancePurposes?: IGeometryPurpose[];
 }
 
 /**
  * GeomSubset for mesh parts
  */
-export interface GeomSubset {
+export interface IGeomSubset {
   /** Subset type */
   elementType: 'face' | 'point' | 'edge';
   /** Subset family name */
@@ -306,27 +210,27 @@ export interface GeomSubset {
 /**
  * Skinning weights
  */
-export interface SkinningWeights {
+export interface ISkinningWeights {
   /** Joint indices per vertex */
   jointIndices: number[][];
   /** Joint weights per vertex */
   jointWeights: number[][];
   /** Bind transform matrix */
-  bindTransform?: number[];
+  bindTransform?: IMatrix4;
   /** Joint transforms */
-  jointTransforms?: number[][];
+  jointTransforms?: IMatrix4[];
 }
 
 /**
  * Blend shape targets
  */
-export interface BlendShape {
+export interface IBlendShape {
   /** Target name */
   name: string;
   /** Target vertex offsets */
-  pointOffsets?: [number, number, number][];
+  pointOffsets?: IVector3[];
   /** Target normal offsets */
-  normalOffsets?: [number, number, number][];
+  normalOffsets?: IVector3[];
   /** Blend shape weight */
   weight?: number;
 }
@@ -334,7 +238,7 @@ export interface BlendShape {
 /**
  * Geometry cache
  */
-export interface GeometryCache {
+export interface IGeometryCache {
   /** Cache file path */
   filePath: string;
   /** Time range */
@@ -346,7 +250,7 @@ export interface GeometryCache {
 /**
  * Geometry state for runtime
  */
-export interface GeometryState {
+export interface IGeometryState {
   /** Geometry ID */
   id: string;
   /** Geometry type */
@@ -356,10 +260,7 @@ export interface GeometryState {
   /** Face count */
   faceCount: number;
   /** Bounding box */
-  bounds?: {
-    min: [number, number, number];
-    max: [number, number, number];
-  };
+  bounds?: IBounds;
   /** Geometry data */
   data: {
     positions?: Float32Array;

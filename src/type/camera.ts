@@ -5,7 +5,7 @@
  * 立体设置和相机属性。
  */
 
-import type { USDPrim } from './scene';
+import type { IUSDPrim } from './scene';
 
 /**
  * Camera projection types
@@ -126,7 +126,7 @@ export interface ShutterConfig {
 /**
  * Camera prim base interface
  */
-export interface CameraPrim extends USDPrim {
+export interface ICameraPrim extends IUSDPrim {
   type: 'Camera';
   /** Camera projection attributes */
   attributes: PerspectiveAttributes | OrthographicAttributes;
@@ -206,7 +206,7 @@ export interface MultiCameraSetup {
   /** Main/active camera */
   mainCamera: string;
   /** All cameras in the setup */
-  cameras: CameraPrim[];
+  cameras: ICameraPrim[];
   /** Camera rigs */
   rigs?: CameraRig[];
   /** Camera switches (time-based) */
