@@ -4,7 +4,7 @@
  * 演示如何使用 DSL 创建基础的 3D 场景
  */
 
-import { DSLEngine } from '../src/core/DSLEngine';
+import { DSLEngine } from '../../src/core/DSLEngine';
 
 async function basicSceneExample() {
   console.log('=== Basic Scene Example ===');

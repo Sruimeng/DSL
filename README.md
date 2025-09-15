@@ -40,6 +40,7 @@ DSL/
 │   │   ├── add-mesh-action.ts         # 添加网格动作
 │   │   ├── remove-mesh-action.ts      # 删除网格动作
 │   │   ├── modify-property-action.ts  # 修改属性动作
+│   │   ├── undo-redo-action.ts        # 撤销重做动作
 │   │   └── ...                     # 其他动作
 │   ├── mcp/
 │   │   └── MCP-controller.ts         # AI MCP 调用接口（不需要实现）
@@ -49,11 +50,29 @@ DSL/
 │   │   └── ...                     # 其他工具
 │   ├── index.ts                    # 入口文件，导出核心 API
 ├── demo/
-│   ├── basic-scene.ts              # 基础示例
-│   ├── plugin-demo.ts              # 插件示例
-│   ├── mcp-demo.ts                 # MCP 调用示例
-│   ├── index.ts                    # 示例索引
-│   └── demo.html                   # HTML 演示页面
+│   ├── index.html                   # 主演示页面
+│   ├── assets/                      # 演示资源
+│   │   ├── animated-scene.json      # 动画场景数据
+│   │   ├── basic-scene.json         # 基础场景数据
+│   │   ├── camera-setups.json       # 相机配置数据
+│   │   ├── materials-and-lights.json # 材质和灯光数据
+│   │   └── renderer-configs.json    # 渲染器配置数据
+│   ├── html/                        # HTML 演示页面
+│   │   ├── basic-dsl.html           # 基础 DSL 演示
+│   │   ├── gltf-demo.html           # GLTF 模型演示
+│   │   ├── material-dsl.html        # 材质演示
+│   │   ├── node-tree-dsl.html       # 节点树演示
+│   │   └── undo-redo-demo.html      # 撤销重做演示
+│   ├── src/                         # TypeScript 演示代码
+│   │   ├── basic-scene.ts           # 基础场景演示
+│   │   ├── plugin-demo.ts           # 插件演示
+│   │   ├── mcp-demo.ts              # MCP 调用演示
+│   │   ├── material-demo.ts         # 材质演示
+│   │   ├── model-demo.ts            # 模型演示
+│   │   ├── undo-redo-demo.ts        # 撤销重做演示
+│   │   └── index.ts                 # 演示索引
+│   └── styles/                      # 样式文件
+│       └── gltf-demo.css            # GLTF 演示样式
 └── dist/                          # 编译输出目录
 ```
 
@@ -230,4 +249,66 @@ async function main() {
 }
 
 main().catch(console.error);
+```
+
+### 4.1 主要问题
+
+1. **导出结构不完整**：index.ts 导出错误。
+2. **重复类型定义**：`geometry.ts` 和 `primitive.ts` 中存在重复。
+3. **命名不一致**：类型命名缺乏统一规范。
+4. **过度使用 unknown 类型**：降低类型安全性。
+5. **类型定义过于复杂**：缺乏必需属性定义。
+6. **缺少类型约束和验证**：可能接受无效值。
+7. **循环依赖风险**：模块间潜在依赖问题。
+
+### 4.2 解决方案
+
+#### 修复导出结构
+
+```typescript
+export * from './common';
+export * from './scene';
+export * from './camera';
+export * from './renderer';
+export * from './geometry';
+export * from './material';
+export * from './light';
+export * from './animation';
+export * from './primitive';
+export * from './engine';
+```
+
+#### 统一几何体定义
+
+```typescript
+export interface CubePrim extends USDPrim {
+  type: 'Cube';
+  size: number;
+  center?: Vector3;
+}
+```
+
+#### 改进类型安全性
+
+```typescript
+export interface EventData {
+  [EventType.SCENE_LOADED]: { sceneId: string };
+  [EventType.OBJECT_ADDED]: { objectId: string; object: THREE.Object3D };
+}
+
+export type EventHandler<T extends EventType> = (data: EventData[T]) => void;
+```
+
+#### 添加类型验证
+
+```typescript
+export class TypeValidator {
+  static validateUSDPrim(prim: any): prim is USDPrim {
+    return (
+      typeof prim === 'object' &&
+      typeof prim.name === 'string' &&
+      typeof prim.type === 'string'
+    );
+  }
+}
 ```

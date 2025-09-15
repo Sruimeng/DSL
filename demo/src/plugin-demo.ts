@@ -4,8 +4,8 @@
  * 演示如何使用和创建插件
  */
 
-import { DSLEngine } from '../src/core/DSLEngine';
-import { BasePlugin } from '../src/plugins/BasePlugin';
+import { DSLEngine } from '../../src/core/DSLEngine';
+import { BasePlugin } from '../../src/plugins/BasePlugin';
 import * as THREE from 'three';
 
 // 自定义插件示例

@@ -4,11 +4,11 @@
  * 演示如何通过 MCP 控制器与 DSL Engine 交互
  */
 
-import { DSLEngine } from '../src/core/DSLEngine';
-import { MCPController } from '../src/mcp/MCPController';
-import { AddMeshAction } from '../src/actions/AddMeshAction';
-import { RemoveMeshAction } from '../src/actions/RemoveMeshAction';
-import { ModifyPropertyAction } from '../src/actions/ModifyPropertyAction';
+import { DSLEngine } from '../../src/core/DSLEngine';
+import { MCPController } from '../../src/mcp/MCPController';
+import { AddMeshAction } from '../../src/actions/AddMeshAction';
+import { RemoveMeshAction } from '../../src/actions/RemoveMeshAction';
+import { ModifyPropertyAction } from '../../src/actions/ModifyPropertyAction';
 
 async function mcpDemo() {
   console.log('=== MCP Demo Example ===');
