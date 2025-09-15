@@ -1,3 +1,3 @@
-export * from './DSL';
+export * from './USD';
 export * from './engine/renderer';
 export * from './loaders';

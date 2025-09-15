@@ -27,9 +27,3 @@ export * from './plugins';
 
 // 工具函数
 export * from './utils';
-
-// 演示组件
-export * from './demo';
-
-// 迁移工具
-export * from './migration';
