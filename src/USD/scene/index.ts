@@ -1,0 +1,1 @@
+export { USDScene } from './usd-scene';

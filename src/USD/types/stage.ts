@@ -67,8 +67,8 @@ export interface UsdStageAPI {
   getMetadata(path: SdfPath, key: string): any;
 
   // 组合操作
-  addReference(primPath: SdfPath, assetPath: string, primPath?: SdfPath): boolean;
-  addPayload(primPath: SdfPath, assetPath: string, primPath?: SdfPath): boolean;
+  addReference(assetPath: string, primPath?: SdfPath): boolean;
+  addPayload(assetPath: string, primPath?: SdfPath): boolean;
   setInherits(primPath: SdfPath, inheritedPath: SdfPath): boolean;
 
   // 变体操作
