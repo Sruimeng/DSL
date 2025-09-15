@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-function-type */
 /**
  * DSL 引擎类型定义
  *
@@ -6,8 +5,9 @@
  * 事件和引擎配置的接口。
  */
 
+import type * as THREE from 'three';
 import type { RendererSettings, USDRenderer } from './renderer';
-import type { ISceneState, IUSDScene } from './scene';
+import type { IUSDScene } from './scene';
 
 /**
  * 通用参数类型
@@ -17,7 +17,7 @@ export type Params = Record<string, unknown>;
 /**
  * Plugin interface
  */
-export interface Plugin {
+export interface IPlugin {
   /** Plugin name */
   name: string;
   /** Plugin version */
@@ -27,11 +27,21 @@ export interface Plugin {
   /** Plugin dependencies */
   dependencies?: string[];
   /** Called when plugin is registered */
-  onRegister(engine: DSLEngine): void;
+  onRegister(engine: {
+    scene: THREE.Scene;
+    camera: THREE.Camera;
+    renderer: THREE.WebGLRenderer;
+  }): void;
   /** Called when plugin is unregistered */
   onUnregister?(): void;
   /** Update method called each frame */
   update?(deltaTime: number): void;
+  /** Scene lifecycle callbacks */
+  onSceneInit?(scene: THREE.Scene): void;
+  onObjectAdded?(object: THREE.Object3D): void;
+  onObjectRemoved?(object: THREE.Object3D): void;
+  onRenderStart?(): void;
+  onRenderEnd?(): void;
   /** Plugin lifecycle methods */
   lifecycle?: {
     onInit?(): void;
@@ -50,7 +60,7 @@ export interface Plugin {
 /**
  * Action interface
  */
-export interface Action {
+export interface IAction {
   /** Action name */
   name: string;
   /** Action description */
@@ -66,6 +76,13 @@ export interface Action {
     shortcut?: string;
     permissions?: string[];
   };
+}
+
+/**
+ * Action constructor
+ */
+export interface IActionConstructor {
+  new (): IAction;
 }
 
 /**
@@ -109,7 +126,7 @@ export interface EventPayload {
 }
 
 /**
- ** Engine configuration
+ * Engine configuration
  */
 export interface EngineConfig {
   /** Renderer settings */
@@ -181,97 +198,7 @@ export interface EngineStats {
 }
 
 /**
- * Resource reference
- */
-export interface ResourceRef {
-  /** Resource type */
-  type: 'texture' | 'geometry' | 'material' | 'audio' | 'video';
-  /** Resource path */
-  path: string;
-  /** Resource ID */
-  id: string;
-  /** Load priority */
-  priority: number;
-  /** Async load */
-  async: boolean;
-}
-
-/**
- * Asset loader interface
- */
-export interface AssetLoader {
-  /** Supported file types */
-  extensions: string[];
-  /** Load asset from URL */
-  load(url: string, options?: unknown): Promise<unknown>;
-  /** Parse asset data */
-  parse(data: unknown, options?: unknown): Promise<unknown>;
-  /** Check if file type is supported */
-  supports(fileType: string): boolean;
-}
-
-/**
- * Script context interface
- */
-export interface ScriptContext {
-  /** Execute script */
-  execute(script: string, context?: unknown): Promise<unknown>;
-  /** Evaluate expression */
-  evaluate(expression: string, context?: unknown): unknown;
-  /** Get available functions */
-  getFunctions(): string[];
-  /** Get global variables */
-  getGlobals(): Record<string, unknown>;
-}
-
-/**
- ** Engine logger interface
- */
-export interface Logger {
-  /** Log debug message */
-  debug(message: string, ...args: unknown[]): void;
-  /** Log info message */
-  info(message: string, ...args: unknown[]): void;
-  /** Log warning message */
-  warn(message: string, ...args: unknown[]): void;
-  /** Log error message */
-  error(message: string, ...args: unknown[]): void;
-  /** Log group start */
-  group(label?: string): void;
-  /** Log group end */
-  groupEnd(): void;
-  /** Time measurement */
-  time(label: string): void;
-  /** Time end measurement */
-  timeEnd(label: string): void;
-}
-
-/**
- * Engine state
- */
-export interface EngineState {
-  /** Is engine initialized */
-  isInitialized: boolean;
-  /** Is engine running */
-  isRunning: boolean;
-  /** Is engine paused */
-  isPaused: boolean;
-  /** Current scene state */
-  scene: ISceneState;
-  /** Engine configuration */
-  config: EngineConfig;
-  /** Engine statistics */
-  stats: EngineStats;
-  /** Active plugins */
-  plugins: Map<string, Plugin>;
-  /** Registered actions */
-  actions: Map<string, Action>;
-  /** Engine version */
-  version: string;
-}
-
-/**
- * DSL Engine interface
+ * DSLEngine interface
  */
 export interface DSLEngine {
   /** Initialize engine with configuration */
@@ -291,19 +218,19 @@ export interface DSLEngine {
   /** Update engine */
   update(deltaTime?: number): void;
   /** Register plugin */
-  registerPlugin(plugin: Plugin): void;
+  registerPlugin(plugin: IPlugin): void;
   /** Unregister plugin */
   unregisterPlugin(pluginName: string): void;
   /** Get plugin by name */
-  getPlugin(pluginName: string): Plugin | undefined;
+  getPlugin(pluginName: string): IPlugin | undefined;
   /** Register action */
-  registerAction(actionName: string, actionClass: Action): void;
+  registerAction(actionName: string, actionClass: IActionConstructor): void;
   /** Unregister action */
   unregisterAction(actionName: string): void;
   /** Execute action */
   executeAction(actionName: string, params?: Params): Promise<void>;
   /** Get all registered actions */
-  getActions(): Map<string, Action>;
+  getActions(): Map<string, IActionConstructor>;
   /** Add event listener */
   on(event: EventType, handler: EventHandler): void;
   /** Remove event listener */
@@ -315,60 +242,17 @@ export interface DSLEngine {
   /** Get renderer */
   getRenderer(): USDRenderer | undefined;
   /** Get engine state */
-  getState(): EngineState;
+  getState(): unknown;
   /** Get engine statistics */
   getStats(): EngineStats;
   /** Add asset loader */
-  addAssetLoader(loader: AssetLoader): void;
+  addAssetLoader(loader: unknown): void;
   /** Load asset */
   loadAsset(path: string, options?: unknown): Promise<unknown>;
   /** Get logger */
-  getLogger(): Logger;
+  getLogger(): unknown;
   /** Get script context */
-  getScriptContext(): ScriptContext;
+  getScriptContext(): unknown;
   /** Dispose engine */
   dispose(): void;
-}
-
-/**
- * Engine factory interface
- */
-export interface EngineFactory {
-  /** Create new engine instance */
-  create(config?: EngineConfig): DSLEngine;
-  /** Get engine version */
-  getVersion(): string;
-  /** Get supported features */
-  getFeatures(): string[];
-}
-
-/**
- * Engine plugin API
- */
-export interface PluginAPI {
-  /** Access to engine instance */
-  engine: DSLEngine;
-  /** Access to scene manager */
-  sceneManager: unknown;
-  /** Access to renderer */
-  renderer: USDRenderer;
-  /** Resource manager */
-  resources: {
-    load(path: string, type: string): Promise<unknown>;
-    get(id: string): unknown;
-    cache(id: string, resource: unknown): void;
-  };
-  /** Event system */
-  events: {
-    on(event: string, handler: (data: unknown) => void): void;
-    off(event: string, handler: (data: unknown) => void): void;
-    emit(event: string, data?: unknown): void;
-  };
-  /** Utilities */
-  utils: {
-    uuid(): string;
-    now(): number;
-    clamp(value: number, min: number, max: number): number;
-    lerp(start: number, end: number, t: number): number;
-  };
 }

@@ -28,6 +28,7 @@ export interface IUSDPrim {
   visibility?: 'inherited' | 'invisible';
   /** 用户自定义属性 */
   customData?: Record<string, unknown>;
+  transform?: IPrimTransform;
 }
 
 /**
@@ -54,6 +55,8 @@ export interface IXformPrim extends IUSDPrim {
   /** 变换操作顺序 */
   xformOpOrder?: string[];
   transform?: IPrimTransform;
+  /** 子 Prim */
+  children?: IUSDPrim[];
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 
 import type { IBounds, IMatrix4, IVector3 } from './common';
-import type { IUSDPrim } from './scene';
+import type { IPrimTransform, IUSDPrim } from './scene';
 
 /**
  * 几何体用途
@@ -91,6 +91,10 @@ export interface IMeshPrim extends IUSDPrim {
   orientation?: IOrientation;
   /** 用途 */
   purpose?: IGeometryPurpose;
+  /** 变换 */
+  transform?: IPrimTransform;
+  /** 材质引用 */
+  material?: string;
 }
 
 /**
@@ -120,6 +124,8 @@ export interface ICurvesPrim extends IUSDPrim {
   wrap?: 'nonperiodic' | 'periodic' | 'pinned';
   /** 用途 */
   purpose?: IGeometryPurpose;
+  /** 变换 */
+  transform?: IPrimTransform;
 }
 
 /**
@@ -153,6 +159,8 @@ export interface IPointsPrim extends IUSDPrim {
   };
   /** 用途 */
   purpose?: IGeometryPurpose;
+  /** 变换 */
+  transform?: IPrimTransform;
 }
 
 /**

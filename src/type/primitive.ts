@@ -5,7 +5,7 @@
  * 和常见几何属性的类型。
  */
 
-import type { IMatrix4, IParams, IVector3 } from './common';
+import type { IParams, IVector3 } from './common';
 import type { IUSDPrim } from './scene';
 
 /**
@@ -317,8 +317,6 @@ export interface IShapePrimitive extends IUSDPrim {
   shapeType: 'path' | 'circle' | 'rectangle' | 'ellipse' | 'polygon';
   /** Shape parameters */
   parameters: IParams;
-  /** Shape transform */
-  transform?: IMatrix4;
 }
 
 /**
