@@ -17,7 +17,7 @@ export interface USDPrim {
   /** Unique identifier for this prim */
   name: string;
   /** Type of the prim */
-  type: PrimType;
+  type: PrimType | string;
   /** Parent prim path */
   parent?: string;
   /** Whether this prim is active */

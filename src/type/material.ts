@@ -5,7 +5,7 @@
  * shaders, textures, and material properties.
  */
 
-import { USDPrim } from './scene';
+import type { USDPrim } from './scene';
 
 /**
  * Material model types
@@ -25,7 +25,15 @@ export type TexCoordSet = 'st' | 'uv' | 'st0' | 'uv0' | 'st1' | 'uv1';
 /**
  * Texture types
  */
-export type TextureType = 'color' | 'normal' | 'roughness' | 'metallic' | 'emissive' | 'opacity' | 'displacement' | 'occlusion';
+export type TextureType =
+  | 'color'
+  | 'normal'
+  | 'roughness'
+  | 'metallic'
+  | 'emissive'
+  | 'opacity'
+  | 'displacement'
+  | 'occlusion';
 
 /**
  * Texture wrapping modes
@@ -110,10 +118,13 @@ export interface CustomShader {
   /** Shader stages */
   stages: Record<ShaderStage, string>;
   /** Uniform variables */
-  uniforms: Record<string, {
-    type: 'float' | 'vec2' | 'vec3' | 'vec4' | 'int' | 'sampler2D';
-    value: any;
-  }>;
+  uniforms: Record<
+    string,
+    {
+      type: 'float' | 'vec2' | 'vec3' | 'vec4' | 'int' | 'sampler2D';
+      value: any;
+    }
+  >;
   /** Vertex attributes */
   attributes?: string[];
   /** Varying variables */
@@ -150,11 +161,14 @@ export interface ShaderNode {
   /** Node type */
   type: string;
   /** Input connections */
-  inputs: Record<string, {
-    type: 'uniform' | 'attribute' | 'connection';
-    value?: any;
-    connection?: string;
-  }>;
+  inputs: Record<
+    string,
+    {
+      type: 'uniform' | 'attribute' | 'connection';
+      value?: any;
+      connection?: string;
+    }
+  >;
   /** Output connections */
   outputs: Record<string, string>;
 }

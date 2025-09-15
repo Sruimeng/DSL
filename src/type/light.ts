@@ -5,7 +5,7 @@
  * shadow properties, and light transport configurations.
  */
 
-import { USDPrim } from './scene';
+import type { USDPrim } from './scene';
 
 /**
  * Light types
@@ -184,7 +184,6 @@ export interface RectLight extends LightPrim {
  * Dome light (environment light)
  */
 export interface DomeLight extends LightPrim {
-  lightType: 'dome';
   /** Environment texture */
   texture?: string;
   /** Dome orientation */
@@ -285,7 +284,7 @@ export interface LightTransport {
   maxBounces?: number;
   /** Sampling settings */
   sampling?: {
-   PerPixel?: number;
+    PerPixel?: number;
     adaptive?: boolean;
     threshold?: number;
   };

@@ -5,9 +5,9 @@
  */
 
 // Core USD Types
-export * from './scene';
 export * from './camera';
 export * from './renderer';
+export * from './scene';
 
 // Geometry Types
 export * from './geometry';

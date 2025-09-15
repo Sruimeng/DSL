@@ -5,7 +5,7 @@
  * and common geometric properties.
  */
 
-import { USDPrim } from './scene';
+import type { USDPrim } from './scene';
 
 /**
  * Primitive types
@@ -48,7 +48,7 @@ export interface PrimitiveAttributes {
   segments?: number;
   /** Radial segments */
   radialSegments?: number;
-  ** Tubular segments (for tube, torus) */
+  /** Tubular segments (for tube, torus) */
   tubularSegments?: number;
   /** Height segments */
   heightSegments?: number;
@@ -157,14 +157,14 @@ export interface TorusPrimitive extends USDPrim {
   tube: number;
   /** Radial segments */
   radialSegments?: number;
-  ** Tubular segments */
+  /** Tubular segments */
   tubularSegments?: number;
   /** Arc */
   arc?: number;
 }
 
 /**
-** Torus knot primitive
+ ** Torus knot primitive
  */
 export interface TorusKnotPrimitive extends USDPrim {
   type: 'TorusKnot';
@@ -172,7 +172,7 @@ export interface TorusKnotPrimitive extends USDPrim {
   radius: number;
   /** Tube radius */
   tube: number;
-  ** Tubular segments */
+  /** Tubular segments */
   tubularSegments?: number;
   /** Radial segments */
   radialSegments?: number;

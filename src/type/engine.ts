@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-function-type */
 /**
  * DSL Engine Type Definitions
  *
@@ -5,8 +6,8 @@
  * plugins, actions, events, and engine configuration.
  */
 
-import { USDScene, SceneState } from './scene';
-import { USDRenderer, RendererSettings } from './renderer';
+import type { RendererSettings, USDRenderer } from './renderer';
+import type { SceneState, USDScene } from './scene';
 
 /**
  * Plugin interface
@@ -103,7 +104,7 @@ export interface EventPayload {
 }
 
 /**
-** Engine configuration
+ ** Engine configuration
  */
 export interface EngineConfig {
   /** Renderer settings */
@@ -154,7 +155,7 @@ export interface EngineStats {
     total: number;
     limit: number;
   };
-  ** Plugin statistics */
+  /** Plugin statistics */
   plugins: {
     total: number;
     active: number;
@@ -165,7 +166,7 @@ export interface EngineStats {
     executed: number;
     failed: number;
   };
-  ** Scene statistics */
+  /** Scene statistics */
   scene: {
     objects: number;
     lights: number;
@@ -314,7 +315,7 @@ export interface DSLEngine {
   getStats(): EngineStats;
   /** Add asset loader */
   addAssetLoader(loader: AssetLoader): void;
-  ** Load asset */
+  /** Load asset */
   loadAsset(path: string, options?: any): Promise<any>;
   /** Get logger */
   getLogger(): Logger;
@@ -346,7 +347,7 @@ export interface PluginAPI {
   sceneManager: any;
   /** Access to renderer */
   renderer: USDRenderer;
-  ** Resource manager */
+  /** Resource manager */
   resources: {
     load(path: string, type: string): Promise<any>;
     get(id: string): any;
@@ -358,7 +359,7 @@ export interface PluginAPI {
     off(event: string, handler: Function): void;
     emit(event: string, data?: any): void;
   };
-  ** Utilities */
+  /** Utilities */
   utils: {
     uuid(): string;
     now(): number;

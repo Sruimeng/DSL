@@ -5,7 +5,7 @@
  * curves, points, and other geometric primitives.
  */
 
-import { USDPrim } from './scene';
+import type { USDPrim } from './scene';
 
 /**
  * Geometry purpose
