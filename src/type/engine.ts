@@ -66,7 +66,7 @@ export interface IAction {
   /** Action description */
   description?: string;
   /** Execute the action */
-  execute(engine: DSLEngine, params?: Params): Promise<void>;
+  execute(engine: IDSLEngine, params?: Params): Promise<void>;
   /** Validate action parameters */
   validate?(params: Params): boolean;
   /** Action metadata */
@@ -200,7 +200,7 @@ export interface EngineStats {
 /**
  * DSLEngine interface
  */
-export interface DSLEngine {
+export interface IDSLEngine {
   /** Initialize engine with configuration */
   initialize(config: EngineConfig): Promise<void>;
   /** Load USD scene */

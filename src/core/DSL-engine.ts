@@ -6,11 +6,11 @@
 
 import type * as THREE from 'three';
 import type { ISceneState, IUSDScene } from '../type/scene';
-import { DSLParser } from './DSLParser';
-import type { EventBus } from './EventBus';
-import { globalEventBus } from './EventBus';
-import { SceneManager } from './SceneManager';
-import { USDLoader } from './USDLoader';
+import { DSLParser } from './DSL-parser';
+import { USDLoader } from './USD-loader';
+import type { EventBus } from './event-bus';
+import { globalEventBus } from './event-bus';
+import { SceneManager } from './scene-manager';
 
 import type {
   EngineConfig,

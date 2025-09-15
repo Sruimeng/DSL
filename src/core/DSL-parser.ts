@@ -486,6 +486,7 @@ export class DSLParser {
    * @returns THREE.Material | null 材质对象
    */
   private static findMaterial(materialPath: string): THREE.Material | null {
+    console.log(`Looking for material at path: ${materialPath}`);
     // 这里简化处理，实际需要实现材质查找逻辑
     return null;
   }

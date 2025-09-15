@@ -48,10 +48,12 @@ DSL/
 │   │   ├── json-utils.ts             # JSON 处理工具
 │   │   └── ...                     # 其他工具
 │   ├── index.ts                    # 入口文件，导出核心 API
-├── examples/
+├── demo/
 │   ├── basic-scene.ts              # 基础示例
 │   ├── plugin-demo.ts              # 插件示例
-│   └── mcp-demo.ts                 # MCP 调用示例
+│   ├── mcp-demo.ts                 # MCP 调用示例
+│   ├── index.ts                    # 示例索引
+│   └── demo.html                   # HTML 演示页面
 └── dist/                          # 编译输出目录
 ```
 
