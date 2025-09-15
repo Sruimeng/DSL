@@ -1,66 +1,66 @@
 /**
- * USD Scene Type Definitions
+ * USD 场景类型定义
  *
- * Defines types for USD scene descriptions, including hierarchy, prims,
- * and scene-level properties.
+ * 定义 USD 场景描述的类型，包括层级结构、Prim
+ * 和场景级属性。
  */
 
 /**
- * Basic USD prim type identifier
+ * 基本 USD Prim 类型标识符
  */
 export type PrimType = 'Xform' | 'Mesh' | 'Camera' | 'Light' | 'Material' | 'Scope' | 'GeomSubset';
 
 /**
- * Base interface for all USD prims
+ * 所有 USD Prim 的基础接口
  */
 export interface USDPrim {
-  /** Unique identifier for this prim */
+  /** 此 Prim 的唯一标识符 */
   name: string;
-  /** Type of the prim */
+  /** Prim 类型 */
   type: PrimType | string;
-  /** Parent prim path */
+  /** 父 Prim 路径 */
   parent?: string;
-  /** Whether this prim is active */
+  /** 此 Prim 是否激活 */
   active?: boolean;
-  /** Visibility state */
+  /** 可见性状态 */
   visibility?: 'inherited' | 'invisible';
-  /** User-defined properties */
-  customData?: Record<string, any>;
+  /** 用户自定义属性 */
+  customData?: Record<string, unknown>;
 }
 
 /**
- * Transform properties for Xform prims
+ * Xform Prim 的变换属性
  */
-export interface Transform {
-  /** Translation in 3D space */
+export interface XformTransform {
+  /** 3D 空间中的平移 */
   translate?: [number, number, number];
-  /** Rotation in Euler angles (degrees) */
+  /** 欧拉角旋转（度） */
   rotate?: [number, number, number];
-  /** Scale factor */
+  /** 缩放因子 */
   scale?: [number, number, number];
-  /** Rotation pivot */
+  /** 旋转枢轴 */
   pivot?: [number, number, number];
-  /** Transformation matrix (16 values in row-major order) */
+  /** 变换矩阵（16 个值，行主序） */
   matrix?: number[];
 }
 
 /**
- * Xform prim - defines transformation hierarchy
+ * Xform Prim - 定义变换层级
  */
 export interface XformPrim extends USDPrim {
   type: 'Xform';
-  /** Transform properties */
+  /** 变换操作顺序 */
   xformOpOrder?: string[];
-  transform?: Transform;
+  transform?: XformTransform;
 }
 
 /**
- * Reference to another prim or external asset
+ * 对另一个 Prim 或外部资产的引用
  */
 export interface Reference {
-  /** Path to the referenced prim */
+  /** 被引用 Prim 的路径 */
   path: string;
-  /** Optional layer offset for time remapping */
+  /** 可选的层偏移用于时间重映射 */
   layerOffset?: {
     offset: number;
     scale: number;
@@ -68,126 +68,126 @@ export interface Reference {
 }
 
 /**
- * Payload for payload composition
+ * Payload 组合的载荷
  */
 export interface Payload {
-  /** Asset path containing the payload */
+  /** 包含载荷的资产路径 */
   assetPath: string;
-  /** Prim path within the asset */
+  /** 资产内的 Prim 路径 */
   primPath?: string;
 }
 
 /**
- * Scope prim - organizational container
+ * Scope Prim - 组织容器
  */
 export interface ScopePrim extends USDPrim {
   type: 'Scope';
-  /** Child prims */
+  /** 子 Prim */
   children?: USDPrim[];
-  /** References to other scopes */
+  /** 对其他 Scope 的引用 */
   references?: Reference[];
-  /** Payload references */
+  /** Payload 引用 */
   payload?: Payload[];
 }
 
 /**
- * Purpose classification for prims
+ * Prim 的用途分类
  */
 export type Purpose = 'default' | 'render' | 'proxy' | 'guide';
 
 /**
- * Bound extents in 3D space
+ * 3D 空间中的边界范围
  */
 export interface Extent {
-  /** Minimum corner */
+  /** 最小角 */
   min: [number, number, number];
-  /** Maximum corner */
+  /** 最大角 */
   max: [number, number, number];
 }
 
 /**
- * GeomSubset - defines subsets of geometry
+ * GeomSubset - 定义几何体子集
  */
 export interface GeomSubsetPrim extends USDPrim {
   type: 'GeomSubset';
-  /** Subset type */
+  /** 子集类型 */
   elementType: 'face' | 'point' | 'vertex';
-  /** Indices of the subset */
+  /** 子集的索引 */
   indices: number[];
-  /** Family name for grouping subsets */
+  /** 用于分组子集的族名 */
   familyName?: string;
 }
 
 /**
- * Scene-level metadata
+ * 场景级元数据
  */
 export interface SceneMetadata {
-  /** Default prim in the scene */
+  /** 场景中的默认 Prim */
   defaultPrim?: string;
-  /** Up axis orientation */
+  /** 上轴方向 */
   upAxis?: 'Y' | 'Z';
-  /** Time codes per second */
+  /** 每秒时间码数 */
   timeCodesPerSecond?: number;
-  /** Scene start time */
+  /** 场景开始时间 */
   startTime?: number;
-  /** Scene end time */
+  /** 场景结束时间 */
   endTime?: number;
-  /** Frame rate */
+  /** 帧率 */
   frameRate?: number;
-  /** Author information */
+  /** 作者信息 */
   authoredBy?: string;
-  /** Creation date */
+  /** 创建日期 */
   created?: string;
-  /** Last modified date */
+  /** 最后修改日期 */
   modified?: string;
-  /** Custom metadata */
-  customData?: Record<string, any>;
+  /** 自定义元数据 */
+  customData?: Record<string, unknown>;
 }
 
 /**
- * Layer information
+ * 层信息
  */
 export interface Layer {
-  /** Layer identifier */
+  /** 层标识符 */
   identifier: string;
-  /** Layer version */
+  /** 层版本 */
   version?: string;
-  /** Layer comments */
+  /** 层注释 */
   comment?: string;
-  /** Sublayers */
+  /** 子层 */
   subLayers?: string[];
 }
 
 /**
- * Complete USD Scene description
+ * 完整的 USD 场景描述
  */
 export interface USDScene {
-  /** Scene metadata */
+  /** 场景元数据 */
   metadata?: SceneMetadata;
-  /** Layer information */
+  /** 层信息 */
   layer?: Layer;
-  /** Root prims in the scene */
+  /** 场景中的根 Prim */
   prims: USDPrim[];
-  /** Global purpose */
+  /** 全局用途 */
   purpose?: Purpose;
-  /** Scene extent */
+  /** 场景范围 */
   extent?: Extent;
 }
 
 /**
- * Scene state for the DSL Engine
+ * DSL 引擎的场景状态
  */
 export interface SceneState {
-  /** Current scene objects */
-  objects: Map<string, any>;
-  /** Active camera */
+  /** 当前场景对象 */
+  objects: Map<string, unknown>;
+  /** 活动相机 */
   activeCamera?: string;
-  /** Scene bounds */
+  /** 场景边界 */
   bounds?: Extent;
-  /** Current time */
+  /** 当前时间 */
   currentTime: number;
-  /** Is scene loaded */
+  /** 场景是否已加载 */
   isLoaded: boolean;
-  /** Is render loop running */
+  /** 渲染循环是否运行中 */
   isRunning: boolean;
 }

@@ -1,9 +1,11 @@
 /**
- * USD Renderer Type Definitions
+ * USD 渲染器类型定义
  *
- * Defines types for renderer configurations, render passes,
- * rendering properties, and render outputs.
+ * 定义渲染器配置、渲染通道、
+ * 渲染属性和渲染输出的类型。
  */
+
+import type { TextureFilter, TextureWrap } from './material';
 
 /**
  * Rendering API types
@@ -49,16 +51,6 @@ export type RenderPassType =
   | 'reflection'
   | 'postprocess'
   | 'composite';
-
-/**
- * Texture filtering modes
- */
-export type TextureFilter = 'nearest' | 'linear' | 'mipmap';
-
-/**
- * Texture wrapping modes
- */
-export type TextureWrap = 'repeat' | 'clamp' | 'mirror';
 
 /**
  * Render target configuration

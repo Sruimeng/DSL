@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 /**
- * Common Utility Type Definitions
+ * 通用工具类型定义
  *
- * Defines types for common utilities, helpers, and shared
- * interfaces used throughout the DSL system.
+ * 定义 DSL 系统中使用的通用工具、助手
+ * 和共享接口的类型。
  */
 
 /**
@@ -141,7 +141,7 @@ export class DSLError extends Error {
     public type: ErrorType,
     message: string,
     public cause?: Error,
-    public context?: any,
+    public context?: unknown,
   ) {
     super(message);
     this.name = 'DSLError';
@@ -158,7 +158,7 @@ export interface Result<T> {
   error?: {
     type: ErrorType;
     message: string;
-    details?: any;
+    details?: unknown;
   };
 }
 
@@ -181,7 +181,7 @@ export enum JobStatus {
 /**
  * Job interface for async operations
  */
-export interface Job<T = any> {
+export interface Job<T = unknown> {
   /** Job ID */
   id: string;
   /** Job name */
@@ -260,7 +260,7 @@ export interface CacheEntry<T> {
  */
 export interface ResourceManager {
   /** Load resource */
-  load<T>(path: string, type: ResourceType, options?: any): Promise<T>;
+  load<T>(path: string, type: ResourceType, options?: unknown): Promise<T>;
   /** Get cached resource */
   get<T>(id: string): T | undefined;
   /** Cache resource */
@@ -289,7 +289,7 @@ export interface EventEmitter {
   /** Remove event listener */
   off(event: string, listener: Function): this;
   /** Emit event */
-  emit(event: string, ...args: any[]): boolean;
+  emit(event: string, ...args: unknown[]): boolean;
   /** Remove all listeners */
   removeAllListeners(event?: string): this;
   /** Get listener count */
@@ -341,15 +341,15 @@ export interface Config {
   /** Get configuration value */
   get<T>(key: string, defaultValue?: T): T;
   /** Set configuration value */
-  set(key: string, value: any): void;
+  set(key: string, value: unknown): void;
   /** Check if key exists */
   has(key: string): boolean;
   /** Delete configuration key */
   delete(key: string): boolean;
   /** Get all configuration */
-  all(): Record<string, any>;
+  all(): Record<string, unknown>;
   /** Load configuration from object */
-  load(config: Record<string, any>): void;
+  load(config: Record<string, unknown>): void;
   /** Save configuration to storage */
   save(): void;
   /** Reset to defaults */
@@ -375,22 +375,6 @@ export interface PerformanceMonitor {
 }
 
 /**
- ** Logger interface
- */
-export interface Logger {
-  /** Log at debug level */
-  debug(message: string, ...args: any[]): void;
-  /** Log at info level */
-  info(message: string, ...args: any[]): void;
-  /** Log at warn level */
-  warn(message: string, ...args: any[]): void;
-  /** Log at error level */
-  error(message: string, ...args: any[]): void;
-  /** Create child logger */
-  child(context: Record<string, any>): Logger;
-}
-
-/**
  * Disposable interface for cleanup
  */
 export interface Disposable {
@@ -409,7 +393,7 @@ export interface Validatable {
 /**
  * Serializable interface
  */
-export interface Serializable<T = any> {
+export interface Serializable<T = unknown> {
   /** Serialize to JSON */
   serialize(): T;
   /** Deserialize from JSON */

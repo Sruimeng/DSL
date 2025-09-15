@@ -1,8 +1,8 @@
 /**
- * USD Light Type Definitions
+ * USD 光源类型定义
  *
- * Defines types for USD lights, including various light types,
- * shadow properties, and light transport configurations.
+ * 定义 USD 光源的类型，包括各种光源类型、
+ * 阴影属性和光传输配置。
  */
 
 import type { USDPrim } from './scene';
@@ -125,7 +125,7 @@ export interface LightFilter {
   /** Filter color */
   color?: [number, number, number];
   /** Filter-specific settings */
-  settings?: Record<string, any>;
+  settings?: Record<string, unknown>;
 }
 
 /**
@@ -181,28 +181,6 @@ export interface RectLight extends LightPrim {
 }
 
 /**
- * Dome light (environment light)
- */
-export interface DomeLight extends LightPrim {
-  /** Environment texture */
-  texture?: string;
-  /** Dome orientation */
-  orientation?: [number, number, number, number];
-  /** Enable portal lights */
-  enablePortals?: boolean;
-  /** Format type */
-  format?: 'latlong' | 'cube' | 'mirrorBall';
-  /** Texture visibility */
-  visibility?: {
-    camera?: boolean;
-    reflections?: boolean;
-    refractions?: boolean;
-    diffuse?: number;
-    specular?: number;
-  };
-}
-
-/**
  * Cylinder light
  */
 export interface CylinderLight extends LightPrim {
@@ -251,7 +229,7 @@ export interface LightGroup {
   /** Light paths in group */
   lights: string[];
   /** Group properties */
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 /**
@@ -307,11 +285,11 @@ export interface LightState {
   /** Current direction */
   direction?: [number, number, number];
   /** Light properties */
-  properties: Record<string, any>;
+  properties: Record<string, unknown>;
   /** Shadow state */
   shadow?: {
     enabled: boolean;
-    map?: any;
+    map?: unknown;
     matrix?: number[];
   };
   /** Is light visible */

@@ -1,8 +1,8 @@
 /**
- * USD Animation Type Definitions
+ * USD 动画类型定义
  *
- * Defines types for USD animations, including time sampling,
- * clips, layers, and animation curves.
+ * 定义 USD 动画的类型，包括时间采样、
+ * 剪辑、层和动画曲线。
  */
 
 /**
@@ -55,7 +55,7 @@ export interface AnimationCurve {
   /** Time sampling reference */
   timeSampling: string;
   /** Keyframe values */
-  values: any[];
+  values: unknown[];
   /** Keyframe tangents (for cubic interpolation) */
   tangents?: {
     in?: number[];
@@ -89,7 +89,7 @@ export interface AnimationLayer {
   /** Animation curves in layer */
   curves: AnimationCurve[];
   /** Layer attributes */
-  attributes?: Record<string, any>;
+  attributes?: Record<string, unknown>;
   /** Enable/disable layer */
   enabled: boolean;
   /** Layer color (for UI) */
@@ -274,7 +274,7 @@ export interface AnimationTransition {
   conditions?: {
     parameter: string;
     operator: 'equals' | 'notEquals' | 'greater' | 'less';
-    value: any;
+    value: unknown;
   }[];
   /** Transition blend mode */
   blendMode?: 'linear' | 'easeIn' | 'easeOut' | 'easeInOut';
@@ -293,7 +293,7 @@ export interface AnimationController {
   /** Current state */
   currentState: string;
   /** Controller parameters */
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
 }
 
 /**
@@ -322,7 +322,7 @@ export interface AnimationTimeline {
   events: {
     time: number;
     callback: string;
-    parameters?: any;
+    parameters?: unknown;
   }[];
 }
 

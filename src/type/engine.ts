@@ -1,13 +1,18 @@
 /* eslint-disable @typescript-eslint/no-unsafe-function-type */
 /**
- * DSL Engine Type Definitions
+ * DSL 引擎类型定义
  *
- * Defines types for the DSL engine, including interfaces for
- * plugins, actions, events, and engine configuration.
+ * 定义 DSL 引擎的类型，包括插件、动作、
+ * 事件和引擎配置的接口。
  */
 
 import type { RendererSettings, USDRenderer } from './renderer';
 import type { SceneState, USDScene } from './scene';
+
+/**
+ * 通用参数类型
+ */
+export type Params = Record<string, unknown>;
 
 /**
  * Plugin interface
@@ -38,7 +43,7 @@ export interface Plugin {
   };
   /** Plugin event handlers */
   handlers?: {
-    [event: string]: (...args: any[]) => void;
+    [event: string]: (...args: unknown[]) => void;
   };
 }
 
@@ -51,9 +56,9 @@ export interface Action {
   /** Action description */
   description?: string;
   /** Execute the action */
-  execute(engine: DSLEngine, params?: any): Promise<void>;
+  execute(engine: DSLEngine, params?: Params): Promise<void>;
   /** Validate action parameters */
-  validate?(params: any): boolean;
+  validate?(params: Params): boolean;
   /** Action metadata */
   metadata?: {
     category?: string;
@@ -87,7 +92,7 @@ export type EventType =
 /**
  * Event handler
  */
-export type EventHandler = (event: any) => void;
+export type EventHandler = (event: unknown) => void;
 
 /**
  * Event payload
@@ -98,7 +103,7 @@ export interface EventPayload {
   /** Event timestamp */
   timestamp: number;
   /** Event data */
-  data: any;
+  data: unknown;
   /** Event source */
   source?: string;
 }
@@ -198,9 +203,9 @@ export interface AssetLoader {
   /** Supported file types */
   extensions: string[];
   /** Load asset from URL */
-  load(url: string, options?: any): Promise<any>;
+  load(url: string, options?: unknown): Promise<unknown>;
   /** Parse asset data */
-  parse(data: any, options?: any): Promise<any>;
+  parse(data: unknown, options?: unknown): Promise<unknown>;
   /** Check if file type is supported */
   supports(fileType: string): boolean;
 }
@@ -210,13 +215,13 @@ export interface AssetLoader {
  */
 export interface ScriptContext {
   /** Execute script */
-  execute(script: string, context?: any): Promise<any>;
+  execute(script: string, context?: unknown): Promise<unknown>;
   /** Evaluate expression */
-  evaluate(expression: string, context?: any): any;
+  evaluate(expression: string, context?: unknown): unknown;
   /** Get available functions */
   getFunctions(): string[];
   /** Get global variables */
-  getGlobals(): Record<string, any>;
+  getGlobals(): Record<string, unknown>;
 }
 
 /**
@@ -224,13 +229,13 @@ export interface ScriptContext {
  */
 export interface Logger {
   /** Log debug message */
-  debug(message: string, ...args: any[]): void;
+  debug(message: string, ...args: unknown[]): void;
   /** Log info message */
-  info(message: string, ...args: any[]): void;
+  info(message: string, ...args: unknown[]): void;
   /** Log warning message */
-  warn(message: string, ...args: any[]): void;
+  warn(message: string, ...args: unknown[]): void;
   /** Log error message */
-  error(message: string, ...args: any[]): void;
+  error(message: string, ...args: unknown[]): void;
   /** Log group start */
   group(label?: string): void;
   /** Log group end */
@@ -260,7 +265,7 @@ export interface EngineState {
   /** Active plugins */
   plugins: Map<string, Plugin>;
   /** Registered actions */
-  actions: Map<string, typeof Action>;
+  actions: Map<string, Action>;
   /** Engine version */
   version: string;
 }
@@ -292,21 +297,21 @@ export interface DSLEngine {
   /** Get plugin by name */
   getPlugin(pluginName: string): Plugin | undefined;
   /** Register action */
-  registerAction(actionName: string, actionClass: typeof Action): void;
+  registerAction(actionName: string, actionClass: Action): void;
   /** Unregister action */
   unregisterAction(actionName: string): void;
   /** Execute action */
-  executeAction(actionName: string, params?: any): Promise<void>;
+  executeAction(actionName: string, params?: Params): Promise<void>;
   /** Get all registered actions */
-  getActions(): Map<string, typeof Action>;
+  getActions(): Map<string, Action>;
   /** Add event listener */
   on(event: EventType, handler: EventHandler): void;
   /** Remove event listener */
   off(event: EventType, handler: EventHandler): void;
   /** Emit event */
-  emit(event: EventType, data?: any): void;
+  emit(event: EventType, data?: unknown): void;
   /** Get scene manager */
-  getSceneManager(): any;
+  getSceneManager(): unknown;
   /** Get renderer */
   getRenderer(): USDRenderer | undefined;
   /** Get engine state */
@@ -316,7 +321,7 @@ export interface DSLEngine {
   /** Add asset loader */
   addAssetLoader(loader: AssetLoader): void;
   /** Load asset */
-  loadAsset(path: string, options?: any): Promise<any>;
+  loadAsset(path: string, options?: unknown): Promise<unknown>;
   /** Get logger */
   getLogger(): Logger;
   /** Get script context */
@@ -344,20 +349,20 @@ export interface PluginAPI {
   /** Access to engine instance */
   engine: DSLEngine;
   /** Access to scene manager */
-  sceneManager: any;
+  sceneManager: unknown;
   /** Access to renderer */
   renderer: USDRenderer;
   /** Resource manager */
   resources: {
-    load(path: string, type: string): Promise<any>;
-    get(id: string): any;
-    cache(id: string, resource: any): void;
+    load(path: string, type: string): Promise<unknown>;
+    get(id: string): unknown;
+    cache(id: string, resource: unknown): void;
   };
   /** Event system */
   events: {
-    on(event: string, handler: Function): void;
-    off(event: string, handler: Function): void;
-    emit(event: string, data?: any): void;
+    on(event: string, handler: (data: unknown) => void): void;
+    off(event: string, handler: (data: unknown) => void): void;
+    emit(event: string, data?: unknown): void;
   };
   /** Utilities */
   utils: {

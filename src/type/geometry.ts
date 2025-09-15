@@ -1,49 +1,49 @@
 /**
- * USD Geometry Type Definitions
+ * USD 几何体类型定义
  *
- * Defines types for USD geometry descriptions, including meshes,
- * curves, points, and other geometric primitives.
+ * 定义 USD 几何体描述的类型，包括网格、
+ * 曲线、点和其他几何基元。
  */
 
 import type { USDPrim } from './scene';
 
 /**
- * Geometry purpose
+ * 几何体用途
  */
 export type GeometryPurpose = 'default' | 'proxy' | 'guide' | 'render';
 
 /**
- * Orientation types
+ * 方向类型
  */
 export type Orientation = 'rightHanded' | 'leftHanded';
 
 /**
- * Subdivision scheme
+ * 细分方案
  */
 export type SubdivisionScheme = 'none' | 'catmullClark' | 'loop' | 'bilinear';
 
 /**
- * Face varying interpolation
+ * 面变化插值
  */
 export type FaceVaryingInterpolation = 'uniform' | 'varying' | 'vertex' | 'faceVarying';
 
 /**
- * Mesh geometry interface
+ * 网格几何体接口
  */
 export interface MeshPrim extends USDPrim {
   type: 'Mesh';
-  /** Vertex positions */
+  /** 顶点位置 */
   points: [number, number, number][];
-  /** Face vertex counts */
+  /** 面顶点数量 */
   faceVertexCounts: number[];
-  /** Face vertex indices */
+  /** 面顶点索引 */
   faceVertexIndices: number[];
-  /** Normals */
+  /** 法线 */
   normals?: {
     values: [number, number, number][];
     interpolation?: FaceVaryingInterpolation;
   };
-  /** UV coordinates */
+  /** UV 坐标 */
   primvars?: {
     st?: {
       values: [number, number][];
@@ -54,101 +54,101 @@ export interface MeshPrim extends USDPrim {
       interpolation?: FaceVaryingInterpolation;
     };
     [key: string]: {
-      values: any[];
+      values: unknown[];
       interpolation?: FaceVaryingInterpolation;
     };
   };
-  /** Vertex colors */
+  /** 顶点颜色 */
   displayColor?: {
     values: [number, number, number][];
     interpolation?: FaceVaryingInterpolation;
   };
-  /** Vertex opacity */
+  /** 顶点不透明度 */
   displayOpacity?: {
     values: number[];
     interpolation?: FaceVaryingInterpolation;
   };
-  /** Subdivision scheme */
+  /** 细分方案 */
   subdivisionScheme?: SubdivisionScheme;
-  /** Crease edges */
+  /** 折边 */
   creases?: {
     edgeIndices: number[];
     edgeSharpnesses: number[];
   };
-  /** Corner sharpness */
+  /** 角锐度 */
   cornerSharpnesses?: {
     indices: number[];
     sharpnesses: number[];
   };
-  /** Hole faces */
+  /** 孔洞面 */
   holeIndices?: number[];
-  /** Double-sided rendering */
+  /** 双面渲染 */
   doubleSided?: boolean;
-  /** Orientation */
+  /** 方向 */
   orientation?: Orientation;
-  /** Purpose */
+  /** 用途 */
   purpose?: GeometryPurpose;
 }
 
 /**
- * Curves geometry interface
+ * 曲线几何体接口
  */
 export interface CurvesPrim extends USDPrim {
   type: 'Curves';
-  /** Curve vertex counts per curve */
+  /** 每条曲线的顶点数量 */
   curveVertexCounts: number[];
-  /** Curve vertices */
+  /** 曲线顶点 */
   points: [number, number, number][];
-  /** Curve widths */
+  /** 曲线宽度 */
   widths?: {
     values: number[];
     interpolation?: 'uniform' | 'varying' | 'vertex';
   };
-  /** Curve normals */
+  /** 曲线法线 */
   normals?: {
     values: [number, number, number][];
     interpolation?: FaceVaryingInterpolation;
   };
-  /** Curve type */
-  type?: 'linear' | 'cubic';
-  /** Basis */
+  /** 曲线类型 */
+  curveType?: 'linear' | 'cubic';
+  /** 基函数 */
   basis?: 'bezier' | 'bspline' | 'catmullRom';
-  /** Wrap mode */
+  /** 包裹模式 */
   wrap?: 'nonperiodic' | 'periodic' | 'pinned';
-  /** Purpose */
+  /** 用途 */
   purpose?: GeometryPurpose;
 }
 
 /**
- * Points geometry interface
+ * 点几何体接口
  */
 export interface PointsPrim extends USDPrim {
   type: 'Points';
-  /** Point positions */
+  /** 点位置 */
   points: [number, number, number][];
-  /** Point widths */
+  /** 点宽度 */
   widths?: {
     values: number[];
     interpolation?: 'uniform' | 'varying' | 'vertex';
   };
-  /** Point normals */
+  /** 点法线 */
   normals?: {
     values: [number, number, number][];
     interpolation?: FaceVaryingInterpolation;
   };
-  /** Point IDs */
+  /** 点 ID */
   ids?: number[];
-  /** Point colors */
+  /** 点颜色 */
   displayColor?: {
     values: [number, number, number][];
     interpolation?: FaceVaryingInterpolation;
   };
-  /** Point opacity */
+  /** 点不透明度 */
   displayOpacity?: {
     values: number[];
     interpolation?: FaceVaryingInterpolation;
   };
-  /** Purpose */
+  /** 用途 */
   purpose?: GeometryPurpose;
 }
 

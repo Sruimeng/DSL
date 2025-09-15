@@ -1,8 +1,8 @@
 /**
- * USD Camera Type Definitions
+ * USD 相机类型定义
  *
- * Defines types for USD camera descriptions, including various projection types,
- * stereo setups, and camera properties.
+ * 定义 USD 相机描述的类型，包括各种投影类型、
+ * 立体设置和相机属性。
  */
 
 import type { USDPrim } from './scene';

@@ -1,8 +1,8 @@
 /**
- * USD Primitive Type Definitions
+ * USD 基元类型定义
  *
- * Defines types for primitive shapes, their attributes,
- * and common geometric properties.
+ * 定义基元形状、其属性
+ * 和常见几何属性的类型。
  */
 
 import type { USDPrim } from './scene';
@@ -315,7 +315,7 @@ export interface ShapePrimitive extends USDPrim {
   /** Shape type */
   shapeType: 'path' | 'circle' | 'rectangle' | 'ellipse' | 'polygon';
   /** Shape parameters */
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   /** Shape transform */
   transform?: number[];
 }
@@ -384,7 +384,7 @@ export interface PrimitiveCollection {
   /** Primitives in collection */
   primitives: PrimitivePrimitive[];
   /** Collection properties */
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 /**

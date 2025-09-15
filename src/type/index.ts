@@ -1,7 +1,7 @@
 /**
- * USD Type Definitions Entry
+ * USD 类型定义入口
  *
- * This file exports all type definitions for the USD DSL project.
+ * 此文件导出 USD DSL 项目的所有类型定义。
  */
 
 // Core USD Types

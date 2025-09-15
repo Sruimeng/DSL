@@ -1,8 +1,8 @@
 /**
- * USD Material Type Definitions
+ * USD 材质类型定义
  *
- * Defines types for USD materials, including surface models,
- * shaders, textures, and material properties.
+ * 定义 USD 材质的类型，包括表面模型、
+ * 着色器、纹理和材质属性。
  */
 
 import type { USDPrim } from './scene';
@@ -106,7 +106,7 @@ export interface MDLMaterial {
   /** Material name */
   name: string;
   /** Material parameters */
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
   /** MDL source code */
   source?: string;
 }
@@ -122,7 +122,7 @@ export interface CustomShader {
     string,
     {
       type: 'float' | 'vec2' | 'vec3' | 'vec4' | 'int' | 'sampler2D';
-      value: any;
+      value: unknown;
     }
   >;
   /** Vertex attributes */
@@ -165,7 +165,7 @@ export interface ShaderNode {
     string,
     {
       type: 'uniform' | 'attribute' | 'connection';
-      value?: any;
+      value?: unknown;
       connection?: string;
     }
   >;
@@ -198,7 +198,7 @@ export interface MaterialVariant {
   /** Variant selection */
   selection: Record<string, string>;
   /** Variant properties */
-  properties?: Record<string, any>;
+  properties?: Record<string, unknown>;
 }
 
 /**
@@ -253,11 +253,11 @@ export interface MaterialState {
   /** Is material loaded */
   isLoaded: boolean;
   /** Compiled shaders */
-  shaders: Record<string, any>;
+  shaders: Record<string, unknown>;
   /** Texture references */
-  textures: Map<string, any>;
+  textures: Map<string, unknown>;
   /** Uniform values */
-  uniforms: Map<string, any>;
+  uniforms: Map<string, unknown>;
   /** Material properties */
-  properties: PreviewSurfaceInputs | Record<string, any>;
+  properties: PreviewSurfaceInputs | Record<string, unknown>;
 }
