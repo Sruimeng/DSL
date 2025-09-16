@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP控制器演示 - Three.js USD DSL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2d1b69 0%, #0f0c29 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .control-panel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 320px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            max-height: calc(100vh - 40px);
+            overflow-y: auto;
+        }
+
+        .panel-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .panel-header h2 {
+            color: #9c88ff;
+            margin-bottom: 8px;
+            font-size: 1.4em;
+        }
+
+        .panel-header p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: #ffd89b;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .action-form {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 13px;
+            opacity: 0.9;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 14px;
+        }
+
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .form-row.triple {
+            grid-template-columns: 1fr 1fr 1fr;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin-bottom: 8px;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        button.remove {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        button.remove:hover {
+            box-shadow: 0 4px 12px rgba(245, 87, 108, 0.4);
+        }
+
+        .object-list {
+            max-height: 200px;
+            overflow-y: auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 10px;
+        }
+
+        .object-item {
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .object-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .object-name {
+            font-weight: 500;
+        }
+
+        .object-type {
+            opacity: 0.7;
+            font-size: 12px;
+        }
+
+        .console-panel {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 360px;
+            height: 150px;
+            background: rgba(0, 0, 0, 0.9);
+            border-radius: 8px;
+            padding: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            overflow-y: auto;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .console-header {
+            color: #4CAF50;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .console-line {
+            margin-bottom: 3px;
+            line-height: 1.4;
+        }
+
+        .console-line.info {
+            color: #2196F3;
+        }
+
+        .console-line.success {
+            color: #4CAF50;
+        }
+
+        .console-line.error {
+            color: #f44336;
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 12px 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+        }
+
+        .status-connected {
+            color: #4CAF50;
+        }
+
+        .status-error {
+            color: #f44336;
+        }
+
+        .json-input {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+        }
+
+        @media (max-width: 768px) {
+            .control-panel {
+                width: 280px;
+                right: 10px;
+                top: 10px;
+            }
+
+            .console-panel {
+                right: 300px;
+                left: 10px;
+                bottom: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="status-indicator">
+        <span id="connectionStatus" class="status-connected">● MCP 控制器已连接</span>
+    </div>
+
+    <div class="control-panel">
+        <div class="panel-header">
+            <h2>🤖 MCP 控制器</h2>
+            <p>通过动作系统控制场景对象</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">➕ 添加对象</div>
+            <div class="action-form">
+                <div class="form-group">
+                    <label>几何体类型</label>
+                    <select id="geometryType">
+                        <option value="BoxGeometry">立方体</option>
+                        <option value="SphereGeometry">球体</option>
+                        <option value="ConeGeometry">圆锥</option>
+                        <option value="CylinderGeometry">圆柱</option>
+                        <option value="TorusGeometry">圆环</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>对象名称</label>
+                    <input type="text" id="objectName" placeholder="输入对象名称">
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>颜色</label>
+                        <input type="color" id="objectColor" value="#ff0000">
+                    </div>
+                    <div class="form-group">
+                        <label>大小</label>
+                        <input type="number" id="objectSize" value="1" min="0.1" step="0.1">
+                    </div>
+                </div>
+                <button onclick="addObject()">添加对象</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">✏️ 修改属性</div>
+            <div class="action-form">
+                <div class="form-group">
+                    <label>目标对象</label>
+                    <select id="targetObject">
+                        <option value="">选择对象</option>
+                    </select>
+                </div>
+                <div class="form-row triple">
+                    <div class="form-group">
+                        <label>X位置</label>
+                        <input type="number" id="posX" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Y位置</label>
+                        <input type="number" id="posY" step="0.1">
+                    </div>
+                    <div class="form-group">
+                        <label>Z位置</label>
+                        <input type="number" id="posZ" step="0.1">
+                    </div>
+                </div>
+                <button onclick="modifyPosition()">修改位置</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">🗑️ 删除对象</div>
+            <div class="action-form">
+                <div class="form-group">
+                    <label>选择要删除的对象</label>
+                    <select id="removeTarget">
+                        <option value="">选择对象</option>
+                    </select>
+                </div>
+                <button class="remove" onclick="removeObject()">删除对象</button>
+            </div>
+        </div>
+
+        <div class="section">
+            <div class="section-title">📋 场景对象</div>
+            <div class="object-list" id="objectList">
+                <div style="text-align: center; opacity: 0.6; padding: 20px;">
+                    暂无对象
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="console-panel">
+        <div class="console-header">MCP 控制台输出</div>
+        <div id="consoleOutput"></div>
+    </div>
+
+    <!-- 导入脚本 -->
+    <script type="module">
+        import { mcpDemo } from '../src/mcp-demo.ts';
+
+        let mcp = null;
+
+        // 日志函数
+        function log(message, type = 'info') {
+            const consoleOutput = document.getElementById('consoleOutput');
+            const line = document.createElement('div');
+            line.className = `console-line ${type}`;
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            consoleOutput.appendChild(line);
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+        }
+
+        // 更新对象列表
+        function updateObjectList() {
+            if (!window.engine || !window.engine.getSceneManager) return;
+
+            const scene = window.engine.getSceneManager().getScene();
+            const objects = [];
+            scene.traverse((obj) => {
+                if (obj.isMesh && obj.name && obj.name !== 'Ground') {
+                    objects.push({ name: obj.name, type: obj.geometry.type });
+                }
+            });
+
+            const objectList = document.getElementById('objectList');
+            const targetSelect = document.getElementById('targetObject');
+            const removeSelect = document.getElementById('removeTarget');
+
+            // 清空列表
+            objectList.innerHTML = '';
+            targetSelect.innerHTML = '<option value="">选择对象</option>';
+            removeSelect.innerHTML = '<option value="">选择对象</option>';
+
+            if (objects.length === 0) {
+                objectList.innerHTML = '<div style="text-align: center; opacity: 0.6; padding: 20px;">暂无对象</div>';
+                return;
+            }
+
+            objects.forEach(obj => {
+                // 添加到对象列表
+                const item = document.createElement('div');
+                item.className = 'object-item';
+                item.innerHTML = `
+                    <span class="object-name">${obj.name}</span>
+                    <span class="object-type">${obj.type}</span>
+                `;
+                objectList.appendChild(item);
+
+                // 添加到选择框
+                const option1 = new Option(obj.name, obj.name);
+                const option2 = new Option(obj.name, obj.name);
+                targetSelect.add(option1);
+                removeSelect.add(option2);
+            });
+        }
+
+        // 添加对象
+        window.addObject = async () => {
+            const geometryType = document.getElementById('geometryType').value;
+            const objectName = document.getElementById('objectName').value || `${geometryType}_${Date.now()}`;
+            const color = document.getElementById('objectColor').value;
+            const size = parseFloat(document.getElementById('objectSize').value);
+
+            try {
+                await mcp.callAction('AddMesh', {
+                    geometry: geometryType,
+                    ...(geometryType === 'BoxGeometry' && { width: size, height: size, depth: size }),
+                    ...(geometryType === 'SphereGeometry' && { radius: size * 0.5 }),
+                    ...(geometryType === 'ConeGeometry' && { radius: size * 0.5, height: size }),
+                    ...(geometryType === 'CylinderGeometry' && { radiusTop: size * 0.5, radiusBottom: size * 0.5, height: size }),
+                    ...(geometryType === 'TorusGeometry' && { radius: size * 0.7, tube: size * 0.2 }),
+                    material: {
+                        type: 'MeshStandardMaterial',
+                        color: color,
+                    },
+                    position: {
+                        x: (Math.random() - 0.5) * 4,
+                        y: Math.random() * 2,
+                        z: (Math.random() - 0.5) * 4,
+                    },
+                    name: objectName,
+                });
+
+                log(`成功添加对象: ${objectName}`, 'success');
+                updateObjectList();
+            } catch (error) {
+                log(`添加对象失败: ${error.message}`, 'error');
+            }
+        };
+
+        // 修改位置
+        window.modifyPosition = async () => {
+            const target = document.getElementById('targetObject').value;
+            if (!target) {
+                log('请选择目标对象', 'error');
+                return;
+            }
+
+            const posX = parseFloat(document.getElementById('posX').value) || 0;
+            const posY = parseFloat(document.getElementById('posY').value) || 0;
+            const posZ = parseFloat(document.getElementById('posZ').value) || 0;
+
+            try {
+                await mcp.callAction('ModifyProperty', {
+                    target: target,
+                    properties: {
+                        position: { x: posX, y: posY, z: posZ },
+                    },
+                });
+
+                log(`成功修改 ${target} 的位置`, 'success');
+            } catch (error) {
+                log(`修改位置失败: ${error.message}`, 'error');
+            }
+        };
+
+        // 删除对象
+        window.removeObject = async () => {
+            const target = document.getElementById('removeTarget').value;
+            if (!target) {
+                log('请选择要删除的对象', 'error');
+                return;
+            }
+
+            try {
+                await mcp.callAction('RemoveMesh', {
+                    target: target,
+                });
+
+                log(`成功删除对象: ${target}`, 'success');
+                updateObjectList();
+            } catch (error) {
+                log(`删除对象失败: ${error.message}`, 'error');
+            }
+        };
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', async () => {
+            log('正在初始化MCP演示...');
+
+            try {
+                const demo = await mcpDemo();
+                mcp = window.mcp;
+
+                log('MCP控制器初始化成功', 'success');
+                updateObjectList();
+
+                // 定期更新对象列表
+                setInterval(updateObjectList, 1000);
+
+            } catch (error) {
+                log(`初始化失败: ${error.message}`, 'error');
+                document.getElementById('connectionStatus').textContent = '● 连接失败';
+                document.getElementById('connectionStatus').className = 'status-error';
+            }
+        });
+    </script>
+</body>
+</html>

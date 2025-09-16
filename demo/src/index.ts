@@ -6,10 +6,10 @@
 
 // 导入所有演示
 export { basicSceneExample } from './basic-scene';
-export { pluginDemo, CustomStatsPlugin, AnimationPlugin } from './plugin-demo';
-export { mcpDemo } from './mcp-demo';
 export { materialDemo } from './material-demo';
+export { mcpDemo } from './mcp-demo';
 export { modelDemo } from './model-demo';
+export { AnimationPlugin, CustomStatsPlugin, pluginDemo } from './plugin-demo';
 export { undoRedoDemo } from './undo-redo-demo';
 
 // 演示列表
@@ -72,15 +72,16 @@ export async function runAllDemos() {
     console.log('========================================\n');
 
     // 在演示之间添加延迟
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    await new Promise((resolve) => setTimeout(resolve, 2000));
   }
 }
 
 // 查找演示
 export function findDemo(name: string) {
-  return demos.find(demo =>
-    demo.name.toLowerCase().includes(name.toLowerCase()) ||
-    demo.file.toLowerCase().includes(name.toLowerCase())
+  return demos.find(
+    (demo) =>
+      demo.name.toLowerCase().includes(name.toLowerCase()) ||
+      demo.file.toLowerCase().includes(name.toLowerCase()),
   );
 }
 
@@ -91,7 +92,7 @@ export async function runDemo(name: string) {
     await demo.run();
   } else {
     console.error(`Demo not found: ${name}`);
-    console.log('Available demos:', demos.map(d => d.name).join(', '));
+    console.log('Available demos:', demos.map((d) => d.name).join(', '));
   }
 }
 

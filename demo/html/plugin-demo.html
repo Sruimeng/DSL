@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>插件系统演示 - Three.js USD DSL</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #134E5E 0%, #71B280 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .plugin-panel {
+            position: fixed;
+            right: 20px;
+            top: 20px;
+            width: 350px;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .plugin-header {
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .plugin-header h2 {
+            color: #4ECDC4;
+            margin-bottom: 8px;
+            font-size: 1.4em;
+        }
+
+        .plugin-header p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .plugin-section {
+            margin-bottom: 20px;
+        }
+
+        .plugin-section h3 {
+            color: #FFE66D;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .plugin-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .plugin-card.active {
+            border-color: #4ECDC4;
+            box-shadow: 0 0 10px rgba(78, 205, 196, 0.3);
+        }
+
+        .plugin-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 10px;
+        }
+
+        .plugin-name {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .plugin-version {
+            font-size: 12px;
+            opacity: 0.7;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+
+        .plugin-description {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        .plugin-stats {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 6px;
+            padding: 10px;
+            font-size: 13px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        .stat-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .stat-label {
+            opacity: 0.8;
+        }
+
+        .stat-value {
+            font-weight: bold;
+            color: #4ECDC4;
+        }
+
+        .controls {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .controls h3 {
+            color: #FFE66D;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+        }
+
+        .button-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            background: linear-gradient(135deg, #4ECDC4 0%, #44A08D 100%);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+        }
+
+        button.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .help-text {
+            font-size: 12px;
+            opacity: 0.7;
+            margin-top: 10px;
+            font-style: italic;
+            text-align: center;
+        }
+
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            padding: 12px 20px;
+            border-radius: 8px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+            }
+        }
+
+        .animated-objects-info {
+            margin-top: 15px;
+            font-size: 13px;
+            opacity: 0.8;
+        }
+
+        @media (max-width: 768px) {
+            .plugin-panel {
+                width: 300px;
+                right: 10px;
+                top: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="status-indicator">
+        <span class="status-dot"></span>
+        <span>插件系统运行中</span>
+    </div>
+
+    <div class="plugin-panel">
+        <div class="plugin-header">
+            <h2>🔌 插件系统</h2>
+            <p>展示自定义统计插件和动画插件的功能</p>
+        </div>
+
+        <div class="plugin-section">
+            <h3>📊 已加载插件</h3>
+
+            <div class="plugin-card active">
+                <div class="plugin-info">
+                    <span class="plugin-name">CustomStatsPlugin</span>
+                    <span class="plugin-version">v1.0.0</span>
+                </div>
+                <div class="plugin-description">自定义统计插件，实时监控场景性能数据</div>
+                <div class="plugin-stats">
+                    <div class="stat-row">
+                        <span class="stat-label">FPS:</span>
+                        <span class="stat-value" id="fpsValue">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">对象数量:</span>
+                        <span class="stat-value" id="objectsValue">0</span>
+                    </div>
+                    <div class="stat-row">
+                        <span class="stat-label">运行时间:</span>
+                        <span class="stat-value" id="runtimeValue">0s</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="plugin-card active">
+                <div class="plugin-info">
+                    <span class="plugin-name">AnimationPlugin</span>
+                    <span class="plugin-version">v1.0.0</span>
+                </div>
+                <div class="plugin-description">动画插件，为对象添加旋转和浮动效果</div>
+                <div class="animated-objects-info">
+                    <div class="stat-row">
+                        <span class="stat-label">动画对象:</span>
+                        <span class="stat-value" id="animatedCount">2</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <h3>🎮 控制</h3>
+            <div class="button-grid">
+                <button onclick="addRandomObject()">添加动画对象</button>
+                <button onclick="toggleAnimation()">暂停/继续动画</button>
+                <button onclick="resetScene()" class="full-width">重置场景</button>
+            </div>
+            <div class="help-text">
+                按空格键也可以快速添加动画对象
+            </div>
+        </div>
+    </div>
+
+    <!-- 导入脚本 -->
+    <script type="module">
+        import { pluginDemo } from '../src/plugin-demo.ts';
+
+        let statsPlugin = null;
+        let animationPlugin = null;
+        let startTime = Date.now();
+        let animationPaused = false;
+
+        // 更新统计信息
+        function updateStats() {
+            if (statsPlugin) {
+                const stats = statsPlugin.getStats();
+                document.getElementById('fpsValue').textContent = stats.fps;
+                document.getElementById('objectsValue').textContent = stats.objects;
+            }
+
+            // 更新运行时间
+            const runtime = Math.floor((Date.now() - startTime) / 1000);
+            document.getElementById('runtimeValue').textContent = runtime + 's';
+        }
+
+        // 添加随机对象
+        window.addRandomObject = () => {
+            if (animationPlugin && window.engine) {
+                const sceneManager = window.engine.getSceneManager();
+                if (sceneManager) {
+                    // 创建随机几何体
+                    const geometries = ['BoxGeometry', 'SphereGeometry', 'ConeGeometry', 'CylinderGeometry'];
+                    const geometryType = geometries[Math.floor(Math.random() * geometries.length)];
+
+                    // 创建随机的对象参数
+                    const color = `hsl(${Math.random() * 360}, 70%, 50%)`;
+                    const size = Math.random() * 0.5 + 0.5;
+                    const position = {
+                        x: (Math.random() - 0.5) * 6,
+                        y: Math.random() * 2,
+                        z: (Math.random() - 0.5) * 6
+                    };
+
+                    // 创建场景对象描述
+                    const objectDesc = {
+                        type: 'mesh',
+                        name: `Animated_${Date.now()}`,
+                        geometry: {
+                            type: geometryType,
+                            ...(geometryType === 'BoxGeometry' && { width: size, height: size, depth: size }),
+                            ...(geometryType === 'SphereGeometry' && { radius: size * 0.5 }),
+                            ...(geometryType === 'ConeGeometry' && { radius: size * 0.5, height: size }),
+                            ...(geometryType === 'CylinderGeometry' && { radiusTop: size * 0.5, radiusBottom: size * 0.5, height: size }),
+                        },
+                        material: {
+                            type: 'MeshStandardMaterial',
+                            color: color,
+                        },
+                        transform: {
+                            position: position,
+                        },
+                        userData: {
+                            animate: true,
+                            rotationSpeed: {
+                                x: Math.random() * 0.02,
+                                y: Math.random() * 0.02,
+                                z: Math.random() * 0.02
+                            },
+                            floatSpeed: Math.random() * 2 + 0.5,
+                            floatHeight: Math.random() * 0.5 + 0.2,
+                        },
+                    };
+
+                    // 通过MCP或直接创建对象
+                    if (window.mcp) {
+                        window.mcp.callAction('AddMesh', objectDesc).catch(console.error);
+                    } else {
+                        // 备用方案：直接创建Three.js对象
+                        const object = sceneManager['dslParser']?.parseObject(objectDesc);
+                        if (object) {
+                            sceneManager.addObject(object);
+                            animationPlugin.addObject(object);
+                            updateAnimatedCount();
+                        }
+                    }
+                }
+            }
+        };
+
+        // 切换动画状态
+        window.toggleAnimation = () => {
+            animationPaused = !animationPaused;
+            console.log(`Animation ${animationPaused ? 'paused' : 'resumed'}`);
+        };
+
+        // 重置场景
+        window.resetScene = () => {
+            if (window.engine && window.engine.getSceneManager) {
+                const sceneManager = window.engine.getSceneManager();
+                const scene = sceneManager.getScene();
+
+                // 移除所有动画对象
+                const toRemove = [];
+                scene.traverse((obj) => {
+                    if (obj.userData?.animate && obj.name !== 'AnimatedCube' && obj.name !== 'AnimatedSphere') {
+                        toRemove.push(obj);
+                    }
+                });
+
+                toRemove.forEach(obj => {
+                    sceneManager.removeObject(obj);
+                    if (animationPlugin) {
+                        animationPlugin.removeObject(obj);
+                    }
+                });
+
+                updateAnimatedCount();
+            }
+        };
+
+        // 更新动画对象计数
+        function updateAnimatedCount() {
+            if (window.engine && window.engine.getSceneManager) {
+                const scene = window.engine.getSceneManager().getScene();
+                let count = 0;
+                scene.traverse((obj) => {
+                    if (obj.userData?.animate) count++;
+                });
+                document.getElementById('animatedCount').textContent = count;
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.addEventListener('DOMContentLoaded', async () => {
+            console.log('初始化插件演示...');
+
+            try {
+                const demo = await pluginDemo();
+
+                // 获取插件实例
+                statsPlugin = demo.CustomStatsPlugin;
+                animationPlugin = demo.AnimationPlugin;
+
+                // 挂载到全局对象
+                window.statsPlugin = statsPlugin;
+                window.animationPlugin = animationPlugin;
+
+                // 定期更新统计信息
+                setInterval(updateStats, 100);
+
+                // 监听键盘事件
+                window.addEventListener('keypress', (event) => {
+                    if (event.code === 'Space') {
+                        event.preventDefault();
+                        addRandomObject();
+                    }
+                });
+
+                console.log('插件演示初始化成功');
+
+            } catch (error) {
+                console.error('插件演示初始化失败:', error);
+                document.querySelector('.status-indicator').innerHTML =
+                    '<span style="color: #f44336;">✗ 插件系统初始化失败</span>';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -102,8 +102,14 @@
 
     .demo-card .actions {
       display: flex;
+      flex-direction: column;
       gap: 10px;
       margin-top: 20px;
+    }
+
+    .demo-card .actions-row {
+      display: flex;
+      gap: 10px;
     }
 
     .demo-card button {
@@ -292,8 +298,11 @@
           <span class="tag">Lighting</span>
         </div>
         <div class="actions">
-          <button class="btn-primary" onclick="openDemo('basic-dsl.html')">Open Demo</button>
-          <button class="btn-secondary" onclick="showDetails('basic')">Details</button>
+          <div class="actions-row">
+            <button class="btn-primary" onclick="openDemo('basic-dsl.html')">打开演示</button>
+            <button class="btn-secondary" onclick="runDemoDirectly('basic-scene')">直接运行</button>
+          </div>
+          <button class="btn-secondary" onclick="showDetails('basic')">详情</button>
         </div>
       </div>
 
@@ -420,92 +429,100 @@
     </div>
   </div>
 
-  <script>
+  <script type="module">
+    // 导入演示索引
+    import { demos, findDemo, runDemo } from './src/index.ts';
+
+    // 调试：显示已加载的演示
+    console.log('已加载的演示:', demos.map(d => d.name));
+
     const demoDetails = {
       basic: {
-        title: 'Basic DSL Demo',
+        title: '基础 DSL 演示',
         content: `
-          <p>This demo demonstrates the fundamentals of the Three.js USD DSL:</p>
+          <p>这个演示展示了 Three.js USD DSL 的基础知识：</p>
           <ul>
-            <li>Creating basic geometries (Box, Sphere, Cylinder, etc.)</li>
-            <li>Applying standard materials with colors and properties</li>
-            <li>Setting up lighting (Ambient, Directional, Point lights)</li>
-            <li>Positioning cameras for scene viewing</li>
-            <li>JSON-based scene description format</li>
+            <li>创建基础几何体（立方体、球体、圆柱体等）</li>
+            <li>应用标准材质和颜色属性</li>
+            <li>设置灯光（环境光、平行光、点光源）</li>
+            <li>定位相机用于场景查看</li>
+            <li>完整的撤销/重做功能</li>
+            <li>实时操作日志</li>
+            <li>对象创建、材质控制、灯光控制、场景管理</li>
           </ul>
-          <p><strong>Try this first</strong> to understand the basic DSL structure and syntax.</p>
+          <p><strong>建议先尝试这个</strong>来理解 DSL 的基本结构和语法。</p>
         `
       },
       material: {
-        title: 'Material System Demo',
+        title: '材质系统演示',
         content: `
-          <p>Advanced material capabilities:</p>
+          <p>高级材质功能：</p>
           <ul>
-            <li>Physically Based Rendering (PBR) materials</li>
-            <li>Texture mapping and UV coordinates</li>
-            <li>Material properties (roughness, metalness, clearcoat)</li>
-            <li>Custom shader materials</li>
-            <li>Material instances and variations</li>
+            <li>基于物理的渲染（PBR）材质</li>
+            <li>纹理映射和UV坐标</li>
+            <li>材质属性（粗糙度、金属度、清漆层）</li>
+            <li>自定义着色器材质</li>
+            <li>材质实例和变化</li>
           </ul>
-          <p>Learn how to create realistic materials for your scenes.</p>
+          <p>学习如何为场景创建逼真的材质。</p>
         `
       },
       gltf: {
-        title: 'GLTF Models Demo',
+        title: 'GLTF 模型演示',
         content: `
-          <p>Working with 3D models:</p>
+          <p>使用3D模型：</p>
           <ul>
-            <li>Loading GLTF/GLB model files</li>
-            <li>Handling model animations</li>
-            <li>Material and texture management</li>
-            <li>Skeleton and skinning support</li>
-            <li>Optimizing model performance</li>
+            <li>加载GLTF/GLB模型文件</li>
+            <li>处理模型动画</li>
+            <li>材质和纹理管理</li>
+            <li>骨骼和蒙皮支持</li>
+            <li>优化模型性能</li>
           </ul>
-          <p>Integrate existing 3D assets into your DSL scenes.</p>
+          <p>将现有的3D资源集成到DSL场景中。</p>
         `
       },
       'node-tree': {
-        title: 'Node Tree Editor Demo',
+        title: '节点树编辑器演示',
         content: `
-          <p>Visual scene editing:</p>
+          <p>可视化场景编辑：</p>
           <ul>
-            <li>Interactive node tree visualization</li>
-            <li>Drag-and-drop scene hierarchy editing</li>
-            <li>Property panels for fine-tuning</li>
-            <li>Real-time preview updates</li>
-            <li>Export/import scene configurations</li>
+            <li>交互式节点树可视化</li>
+            <li>拖放场景层次结构编辑</li>
+            <li>用于微调的属性面板</li>
+            <li>实时预览更新</li>
+            <li>导出/导入场景配置</li>
           </ul>
-          <p>Build complex scenes visually without writing code.</p>
+          <p>无需编写代码即可可视化构建复杂场景。</p>
         `
       },
       'undo-redo': {
-        title: 'Undo/Redo System Demo',
+        title: '撤销/重做系统演示',
         content: `
-          <p>Complete history management:</p>
+          <p>完整的历史管理：</p>
           <ul>
-            <li>Command pattern implementation</li>
-            <li>Unlimited undo/redo operations</li>
-            <li>Scene state snapshots</li>
-            <li>Branching history timeline</li>
-            <li>Macro recording and playback</li>
+            <li>命令模式实现</li>
+            <li>无限制的撤销/重做操作</li>
+            <li>场景状态快照</li>
+            <li>分支历史时间线</li>
+            <li>宏录制和播放</li>
           </ul>
-          <p>Never lose your work with robust history tracking.</p>
+          <p>通过强大的历史跟踪功能，永远不会丢失工作。</p>
         `
       },
       mcp: {
-        title: 'MCP Integration Demo',
+        title: 'MCP 集成演示',
         content: `
-          <p>AI-powered scene creation:</p>
+          <p>AI驱动的场景创建：</p>
           <ul>
-            <li>Natural language scene descriptions</li>
-            <li>AI-generated 3D scenes</li>
-            <li>Intelligent object placement</li>
-            <li>Automated lighting setup</li>
-            <li>Style transfer and variations</li>
+            <li>自然语言场景描述</li>
+            <li>AI生成的3D场景</li>
+            <li>智能对象放置</li>
+            <li>自动灯光设置</li>
+            <li>风格转换和变化</li>
           </ul>
-          <p>Experience the future of 3D content creation with AI.</p>
-          <pre><code>// Example MCP command
-"Create a cozy bedroom with a bed, nightstand, and warm lighting"</code></pre>
+          <p>体验AI驱动的3D内容创作的未来。</p>
+          <pre><code>// 示例MCP命令
+"创建一个带有床、床头柜和温暖灯光的舒适卧室"</code></pre>
         `
       }
     };
@@ -516,6 +533,22 @@
 
     function openMCPDemo() {
       window.open('../examples/mcp-demo.html', '_blank');
+    }
+
+    // 新增：直接运行演示的功能
+    async function runDemoDirectly(demoName) {
+      const demo = findDemo(demoName);
+      if (demo) {
+        try {
+          console.log(`正在运行演示: ${demo.name}`);
+          await runDemo(demoName);
+        } catch (error) {
+          console.error(`运行演示失败:`, error);
+          alert(`运行演示失败: ${error.message}`);
+        }
+      } else {
+        console.error(`找不到演示: ${demoName}`);
+      }
     }
 
     function showDetails(demo) {

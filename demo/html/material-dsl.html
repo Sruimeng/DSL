@@ -712,6 +712,14 @@
     </div>
 
     <!-- 导入脚本 -->
-    <script type="module" src="../src/material-dsl.ts"></script>
+    <script type="module">
+      import { materialDemo } from '../src/material-demo.ts';
+
+      // 页面加载完成后初始化演示
+      window.addEventListener('DOMContentLoaded', () => {
+        console.log('初始化材质演示...');
+        materialDemo();
+      });
+    </script>
 </body>
 </html>

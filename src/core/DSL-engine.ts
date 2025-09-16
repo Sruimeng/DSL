@@ -153,7 +153,7 @@ export class DSLEngine {
    */
   public async loadDSL(dslJson: IUSDScene): Promise<void> {
     if (!this.isInitialized) {
-      throw new Error('Engine is not initialized');
+      await this.initialize();
     }
 
     try {
@@ -190,6 +190,10 @@ export class DSLEngine {
    * @param url USD 文件 URL
    */
   public async loadFromURL(url: string): Promise<void> {
+    if (!this.isInitialized) {
+      await this.initialize();
+    }
+
     try {
       const dslJson = await USDLoader.load(url);
       await this.loadDSL(dslJson);

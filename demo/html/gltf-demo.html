@@ -1,33 +1,91 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-CN">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>DSL GLTF Loader Demo</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D模型演示 - Three.js USD DSL</title>
     <style>
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
 
-      body {
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
-        color: white;
-        height: 100vh;
-        overflow: hidden;
-      }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: white;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-      #root {
-        width: 100vw;
-        height: 100vh;
-      }
+        #canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+
+        .info-panel {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 300px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .info-panel h2 {
+            margin-bottom: 15px;
+            color: #64b5f6;
+        }
+
+        .info-panel p {
+            margin-bottom: 10px;
+            font-size: 14px;
+            line-height: 1.5;
+            opacity: 0.9;
+        }
+
+        .info-panel .note {
+            font-style: italic;
+            opacity: 0.7;
+            margin-top: 15px;
+            font-size: 12px;
+        }
+
+        .loading {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 18px;
+            color: #64b5f6;
+        }
     </style>
-  </head>
-  <body>
-    <div id="root"></div>
-    <!-- Vite 会自动处理 TSX 编译和模块解析 -->
-    <script type="module" src="../src/main.tsx"></script>
-  </body>
+</head>
+<body>
+    <canvas id="canvas"></canvas>
+
+    <div class="info-panel">
+        <h2>🎯 3D模型演示</h2>
+        <p>此演示展示了用于加载3D模型的基础场景设置。</p>
+        <p>场景包含了专业的三光源照明系统和展示平台。</p>
+        <p class="note">注意：此版本使用占位符几何体展示模型位置。实际模型加载需要集成GLTFLoader等加载器。</p>
+    </div>
+
+    <!-- 导入脚本 -->
+    <script type="module">
+        import { modelDemo } from '../src/model-demo.ts';
+
+        // 页面加载完成后初始化演示
+        window.addEventListener('DOMContentLoaded', () => {
+            console.log('初始化3D模型演示...');
+            modelDemo();
+        });
+    </script>
+</body>
 </html>
