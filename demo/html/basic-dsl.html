@@ -1,556 +1,570 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TripoScript 2.1 DSL 基础演示 - 带 Undo/Redo</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>基础 DSL 演示 - Three.js USD DSL</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: #333;
-            overflow: hidden;
-        }
+      body {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: #333;
+        overflow: hidden;
+      }
 
-        .app-container {
-            display: flex;
-            height: 100vh;
-            width: 100vw;
-        }
+      .app-container {
+        display: flex;
+        height: 100vh;
+        width: 100vw;
+      }
 
-        /* 左侧展示区 */
-        .viewer-section {
-            flex: 1;
-            position: relative;
-            min-width: 0;
-        }
+      /* 左侧展示区 */
+      .viewer-section {
+        flex: 1;
+        position: relative;
+        min-width: 0;
+      }
 
-        #canvas {
-            width: 100%;
-            height: 100%;
-            display: block;
-            border-radius: 0 8px 0 0;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-        }
+      #canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+        border-radius: 0 8px 0 0;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+      }
 
-        /* 左上角统计面板 */
-        .top-stats-panel {
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 12px;
-            z-index: 1000;
-            min-width: 200px;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+      /* 左上角统计面板 */
+      .top-stats-panel {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: rgba(0, 0, 0, 0.8);
+        color: white;
+        padding: 12px;
+        border-radius: 8px;
+        font-family: monospace;
+        font-size: 12px;
+        z-index: 1000;
+        min-width: 200px;
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+      }
 
-        .top-stats-panel .stats-title {
-            font-weight: bold;
-            margin-bottom: 8px;
-            color: #60a5fa;
-        }
+      .top-stats-panel .stats-title {
+        font-weight: bold;
+        margin-bottom: 8px;
+        color: #60a5fa;
+      }
 
-        .top-stats-panel .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 4px;
-        }
+      .top-stats-panel .stats-grid {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 4px;
+      }
 
-        .top-stats-panel .stat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
+      .top-stats-panel .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
 
-        .top-stats-panel .label {
-            color: #d1d5db;
-        }
+      .top-stats-panel .label {
+        color: #d1d5db;
+      }
 
-        .top-stats-panel .value {
-            color: #fbbf24;
-            font-weight: bold;
-        }
+      .top-stats-panel .value {
+        color: #fbbf24;
+        font-weight: bold;
+      }
 
-        /* 右侧操作栏 */
+      /* 右侧操作栏 */
+      .control-panel {
+        width: 320px;
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-left: 1px solid rgba(255, 255, 255, 0.2);
+        display: flex;
+        flex-direction: column;
+        overflow-y: auto;
+      }
+
+      .panel-header {
+        padding: 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.1);
+      }
+
+      .panel-header h1 {
+        font-size: 1.5rem;
+        color: #333;
+        margin-bottom: 8px;
+      }
+
+      .panel-header p {
+        color: #666;
+        font-size: 0.9rem;
+      }
+
+      /* Undo/Redo 控制区 */
+      .undo-redo-section {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .undo-redo-controls {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .undo-redo-controls button {
+        flex: 1;
+        padding: 8px 12px;
+        border: none;
+        border-radius: 6px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .undo-btn {
+        background: #3b82f6;
+        color: white;
+      }
+
+      .undo-btn:hover:not(:disabled) {
+        background: #2563eb;
+      }
+
+      .redo-btn {
+        background: #10b981;
+        color: white;
+      }
+
+      .redo-btn:hover:not(:disabled) {
+        background: #059669;
+      }
+
+      .undo-redo-controls button:disabled {
+        background: #d1d5db;
+        color: #9ca3af;
+        cursor: not-allowed;
+      }
+
+      .clear-history-btn {
+        width: 100%;
+        padding: 6px 12px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: background 0.2s ease;
+      }
+
+      .clear-history-btn:hover {
+        background: #dc2626;
+      }
+
+      /* 历史记录显示 */
+      .history-section {
+        padding: 0 20px 16px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        max-height: 200px;
+        overflow-y: auto;
+      }
+
+      .history-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 8px;
+      }
+
+      .history-list {
+        max-height: 150px;
+        overflow-y: auto;
+      }
+
+      .history-item {
+        padding: 6px 8px;
+        margin-bottom: 4px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .history-item.active {
+        background: rgba(59, 130, 246, 0.1);
+        border-left: 3px solid #3b82f6;
+      }
+
+      .history-item.inactive {
+        background: rgba(156, 163, 175, 0.1);
+        border-left: 3px solid #9ca3af;
+        opacity: 0.6;
+      }
+
+      .action-type {
+        font-weight: 500;
+      }
+
+      .action-time {
+        font-size: 0.7rem;
+        color: #6b7280;
+      }
+
+      /* 控制区域 */
+      .control-section {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+      }
+
+      .section-title {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .button-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+
+      .button-grid.single {
+        grid-template-columns: 1fr;
+      }
+
+      .btn {
+        padding: 10px 12px;
+        border: none;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.2s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+
+      .btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+      }
+
+      .btn-primary:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+      }
+
+      .btn-secondary {
+        background: rgba(107, 114, 128, 0.1);
+        color: #374151;
+        border: 1px solid rgba(107, 114, 128, 0.2);
+      }
+
+      .btn-secondary:hover {
+        background: rgba(107, 114, 128, 0.2);
+      }
+
+      .btn-accent {
+        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        color: white;
+      }
+
+      .btn-accent:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
+      }
+
+      .btn-warning {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        color: #92400e;
+      }
+
+      .btn-warning:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(252, 182, 159, 0.4);
+      }
+
+      /* 统计信息区域 */
+      .stats-section {
+        padding: 16px 20px;
+        border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        background: rgba(249, 250, 251, 0.5);
+      }
+
+      .stats-grid {
+        display: grid;
+        gap: 8px;
+      }
+
+      .stat-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 8px 12px;
+        background: white;
+        border-radius: 6px;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+      }
+
+      .stat-item .label {
+        font-size: 0.85rem;
+        color: #6b7280;
+        font-weight: 500;
+      }
+
+      .stat-item .value {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      /* 日志区域 */
+      .logs-section {
+        flex: 1;
+        padding: 16px 20px;
+        min-height: 200px;
+        display: flex;
+        flex-direction: column;
+      }
+
+      .logs-container {
+        flex: 1;
+        min-height: 150px;
+        background: rgba(17, 24, 39, 0.95);
+        border-radius: 6px;
+        padding: 12px;
+        overflow-y: auto;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8rem;
+        color: #e5e7eb;
+        line-height: 1.4;
+      }
+
+      .logs-container div {
+        margin-bottom: 4px;
+        padding: 2px 0;
+      }
+
+      .logs-container::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .logs-container::-webkit-scrollbar-track {
+        background: rgba(55, 65, 81, 0.3);
+        border-radius: 3px;
+      }
+
+      .logs-container::-webkit-scrollbar-thumb {
+        background: rgba(156, 163, 175, 0.5);
+        border-radius: 3px;
+      }
+
+      /* 响应式设计 */
+      @media (max-width: 768px) {
         .control-panel {
-            width: 320px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border-left: 1px solid rgba(255, 255, 255, 0.2);
-            display: flex;
-            flex-direction: column;
-            overflow-y: auto;
-        }
-
-        .panel-header {
-            padding: 20px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            background: rgba(255, 255, 255, 0.1);
-        }
-
-        .panel-header h1 {
-            font-size: 1.5rem;
-            color: #333;
-            margin-bottom: 8px;
-        }
-
-        .panel-header p {
-            color: #666;
-            font-size: 0.9rem;
-        }
-
-        /* Undo/Redo 控制区 */
-        .undo-redo-section {
-            padding: 16px 20px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .undo-redo-controls {
-            display: flex;
-            gap: 8px;
-            margin-bottom: 12px;
-        }
-
-        .undo-redo-controls button {
-            flex: 1;
-            padding: 8px 12px;
-            border: none;
-            border-radius: 6px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
-        }
-
-        .undo-btn {
-            background: #3b82f6;
-            color: white;
-        }
-
-        .undo-btn:hover:not(:disabled) {
-            background: #2563eb;
-        }
-
-        .redo-btn {
-            background: #10b981;
-            color: white;
-        }
-
-        .redo-btn:hover:not(:disabled) {
-            background: #059669;
-        }
-
-        .undo-redo-controls button:disabled {
-            background: #d1d5db;
-            color: #9ca3af;
-            cursor: not-allowed;
-        }
-
-        .clear-history-btn {
-            width: 100%;
-            padding: 6px 12px;
-            background: #ef4444;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            cursor: pointer;
-            transition: background 0.2s ease;
-        }
-
-        .clear-history-btn:hover {
-            background: #dc2626;
-        }
-
-        /* 历史记录显示 */
-        .history-section {
-            padding: 0 20px 16px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            max-height: 200px;
-            overflow-y: auto;
-        }
-
-        .history-title {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-        }
-
-        .history-list {
-            max-height: 150px;
-            overflow-y: auto;
-        }
-
-        .history-item {
-            padding: 6px 8px;
-            margin-bottom: 4px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .history-item.active {
-            background: rgba(59, 130, 246, 0.1);
-            border-left: 3px solid #3b82f6;
-        }
-
-        .history-item.inactive {
-            background: rgba(156, 163, 175, 0.1);
-            border-left: 3px solid #9ca3af;
-            opacity: 0.6;
-        }
-
-        .action-type {
-            font-weight: 500;
-        }
-
-        .action-time {
-            font-size: 0.7rem;
-            color: #6b7280;
-        }
-
-        /* 控制区域 */
-        .control-section {
-            padding: 16px 20px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .section-title {
-            font-size: 1rem;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 12px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+          width: 280px;
         }
 
         .button-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 12px;
+          grid-template-columns: 1fr;
         }
+      }
 
-        .button-grid.single {
-            grid-template-columns: 1fr;
-        }
+      /* 动画效果 */
+      .control-section {
+        animation: fadeInUp 0.3s ease-out;
+      }
 
-        .btn {
-            padding: 10px 12px;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 6px;
+      @keyframes fadeInUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
         }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        to {
+          opacity: 1;
+          transform: translateY(0);
         }
-
-        .btn-primary:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-
-        .btn-secondary {
-            background: rgba(107, 114, 128, 0.1);
-            color: #374151;
-            border: 1px solid rgba(107, 114, 128, 0.2);
-        }
-
-        .btn-secondary:hover {
-            background: rgba(107, 114, 128, 0.2);
-        }
-
-        .btn-accent {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-
-        .btn-accent:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(240, 147, 251, 0.4);
-        }
-
-        .btn-warning {
-            background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
-            color: #92400e;
-        }
-
-        .btn-warning:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(252, 182, 159, 0.4);
-        }
-
-        /* 统计信息区域 */
-        .stats-section {
-            padding: 16px 20px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-            background: rgba(249, 250, 251, 0.5);
-        }
-
-        .stats-grid {
-            display: grid;
-            gap: 8px;
-        }
-
-        .stat-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 12px;
-            background: white;
-            border-radius: 6px;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-
-        .stat-item .label {
-            font-size: 0.85rem;
-            color: #6b7280;
-            font-weight: 500;
-        }
-
-        .stat-item .value {
-            font-size: 0.9rem;
-            font-weight: 600;
-            color: #374151;
-        }
-
-                /* 日志区域 */
-        .logs-section {
-          flex: 1;
-          padding: 16px 20px;
-          min-height: 200px;
-          display: flex;
-          flex-direction: column;
-        }
-
-        .logs-container {
-          flex: 1;
-          min-height: 150px;
-          background: rgba(17, 24, 39, 0.95);
-          border-radius: 6px;
-          padding: 12px;
-          overflow-y: auto;
-          font-family: 'Courier New', monospace;
-          font-size: 0.8rem;
-          color: #e5e7eb;
-          line-height: 1.4;
-        }
-
-        .logs-container div {
-            margin-bottom: 4px;
-            padding: 2px 0;
-        }
-
-        .logs-container::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .logs-container::-webkit-scrollbar-track {
-            background: rgba(55, 65, 81, 0.3);
-            border-radius: 3px;
-        }
-
-        .logs-container::-webkit-scrollbar-thumb {
-            background: rgba(156, 163, 175, 0.5);
-            border-radius: 3px;
-        }
-
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .control-panel {
-                width: 280px;
-            }
-            
-            .button-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* 动画效果 */
-        .control-section {
-            animation: fadeInUp 0.3s ease-out;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
+      }
     </style>
-</head>
-<body>
+  </head>
+  <body>
     <div class="app-container">
-        <!-- 左侧展示区 -->
-        <div class="viewer-section">
-            <canvas id="canvas"></canvas>
-            
-            <!-- 左上角统计面板 -->
-            <div class="top-stats-panel" id="topStatsPanel">
-                <div class="stats-title">📚 历史统计</div>
-                <div class="stats-grid" id="topStats">
-                    <!-- 统计信息将在这里动态更新 -->
-                </div>
-            </div>
+      <!-- 左侧展示区 -->
+      <div class="viewer-section">
+        <canvas id="canvas"></canvas>
+
+        <!-- 左上角统计面板 -->
+        <div class="top-stats-panel" id="topStatsPanel">
+          <div class="stats-title">📚 历史统计</div>
+          <div class="stats-grid" id="topStats">
+            <!-- 统计信息将在这里动态更新 -->
+          </div>
+        </div>
+      </div>
+
+      <!-- 右侧操作栏 -->
+      <div class="control-panel">
+        <!-- 标题区域 -->
+        <div class="panel-header">
+          <h1>🎮 DSL 控制台</h1>
+          <p>基础场景演示</p>
         </div>
 
-        <!-- 右侧操作栏 -->
-        <div class="control-panel">
-            <!-- 标题区域 -->
-            <div class="panel-header">
-                <h1>🎮 DSL 控制台</h1>
-                <p>TripoScript 2.1 基础演示</p>
-            </div>
-
-            <!-- Undo/Redo 控制区 -->
-            <div class="undo-redo-section">
-                <div class="undo-redo-controls">
-                    <button id="undoBtn" class="undo-btn" onclick="undo()" title="撤销">
-                        ↶ 撤销
-                    </button>
-                    <button id="redoBtn" class="redo-btn" onclick="redo()" title="重做">
-                        ↷ 重做
-                    </button>
-                </div>
-                <button class="clear-history-btn" onclick="clearHistory()">
-                    🗑️ 清空历史
-                </button>
-            </div>
-
-            <!-- 历史记录显示 -->
-            <div class="history-section">
-                <div class="history-title">📜 操作历史</div>
-                <div id="historyList" class="history-list">
-                    <!-- 历史记录项将在这里动态生成 -->
-                </div>
-            </div>
-
-            <!-- 对象创建区域 -->
-            <div class="control-section">
-                <div class="section-title">
-                    🏗️ 对象创建
-                </div>
-                <div class="button-grid">
-                    <button class="btn btn-primary" onclick="addCube()">
-                        📦 立方体
-                    </button>
-                    <button class="btn btn-primary" onclick="addSphere()">
-                        🔮 球体
-                    </button>
-                    <button class="btn btn-primary" onclick="addPlane()">
-                        📄 平面
-                    </button>
-                    <button class="btn btn-primary" onclick="addCylinder()">
-                        🏛️ 圆柱
-                    </button>
-                </div>
-            </div>
-
-            <!-- 材质控制区域 -->
-            <div class="control-section">
-                <div class="section-title">
-                    🎨 材质控制
-                </div>
-                <div class="button-grid">
-                    <button class="btn btn-secondary" onclick="changeToStandard()">
-                        🎯 标准材质
-                    </button>
-                    <button class="btn btn-secondary" onclick="changeToWireframe()">
-                        🔗 线框模式
-                    </button>
-                    <button class="btn btn-accent" onclick="randomColors()">
-                        🌈 随机颜色
-                    </button>
-                    <button class="btn btn-warning" onclick="applyGolden()">
-                        ✨ 黄金材质
-                    </button>
-                </div>
-            </div>
-
-            <!-- 光照控制区域 -->
-            <div class="control-section">
-                <div class="section-title">
-                    💡 光照控制
-                </div>
-                <div class="button-grid">
-                    <button class="btn btn-secondary" onclick="toggleAmbient()">
-                        🌙 环境光
-                    </button>
-                    <button class="btn btn-secondary" onclick="toggleDirectional()">
-                        ☀️ 平行光
-                    </button>
-                    <button class="btn btn-primary" onclick="addPointLight()">
-                        💡 点光源
-                    </button>
-                    <button class="btn btn-accent" onclick="changeBackground()">
-                        🎨 背景色
-                    </button>
-                </div>
-            </div>
-
-            <!-- 场景管理区域 -->
-            <div class="control-section">
-                <div class="section-title">
-                    🎬 场景管理
-                </div>
-                <div class="button-grid">
-                    <button class="btn btn-secondary" onclick="resetCamera()">
-                        📷 重置相机
-                    </button>
-                    <button class="btn btn-warning" onclick="clearScene()">
-                        🗑️ 清空场景
-                    </button>
-                </div>
-            </div>
-
-
-
-            <!-- 日志区域 -->
-            <div class="logs-section">
-                <div class="section-title">
-                    📝 操作日志
-                </div>
-                <div id="logs" class="logs-container">
-                    <!-- 日志信息将在这里显示 -->
-                </div>
-            </div>
+        <!-- Undo/Redo 控制区 -->
+        <div class="undo-redo-section">
+          <div class="undo-redo-controls">
+            <button id="undoBtn" class="undo-btn" onclick="undo()" title="撤销">↶ 撤销</button>
+            <button id="redoBtn" class="redo-btn" onclick="redo()" title="重做">↷ 重做</button>
+          </div>
+          <button class="clear-history-btn" onclick="clearHistory()">🗑️ 清空历史</button>
         </div>
+
+        <!-- 历史记录显示 -->
+        <div class="history-section">
+          <div class="history-title">📜 操作历史</div>
+          <div id="historyList" class="history-list">
+            <!-- 历史记录项将在这里动态生成 -->
+          </div>
+        </div>
+
+        <!-- 对象创建区域 -->
+        <div class="control-section">
+          <div class="section-title">🏗️ 对象创建</div>
+          <div class="button-grid">
+            <button class="btn btn-primary" onclick="addCube()">📦 立方体</button>
+            <button class="btn btn-primary" onclick="addSphere()">🔮 球体</button>
+            <button class="btn btn-primary" onclick="addPlane()">📄 平面</button>
+            <button class="btn btn-primary" onclick="addCylinder()">🏛️ 圆柱</button>
+          </div>
+        </div>
+
+        <!-- 材质控制区域 -->
+        <div class="control-section">
+          <div class="section-title">🎨 材质控制</div>
+          <div class="button-grid">
+            <button class="btn btn-secondary" onclick="changeToStandard()">🎯 标准材质</button>
+            <button class="btn btn-secondary" onclick="changeToWireframe()">🔗 线框模式</button>
+            <button class="btn btn-accent" onclick="randomColors()">🌈 随机颜色</button>
+            <button class="btn btn-warning" onclick="applyGolden()">✨ 黄金材质</button>
+          </div>
+        </div>
+
+        <!-- 光照控制区域 -->
+        <div class="control-section">
+          <div class="section-title">💡 光照控制</div>
+          <div class="button-grid">
+            <button class="btn btn-secondary" onclick="toggleAmbient()">🌙 环境光</button>
+            <button class="btn btn-secondary" onclick="toggleDirectional()">☀️ 平行光</button>
+            <button class="btn btn-primary" onclick="addPointLight()">💡 点光源</button>
+            <button class="btn btn-accent" onclick="changeBackground()">🎨 背景色</button>
+          </div>
+        </div>
+
+        <!-- 场景管理区域 -->
+        <div class="control-section">
+          <div class="section-title">🎬 场景管理</div>
+          <div class="button-grid">
+            <button class="btn btn-secondary" onclick="resetCamera()">📷 重置相机</button>
+            <button class="btn btn-warning" onclick="clearScene()">🗑️ 清空场景</button>
+          </div>
+        </div>
+
+        <!-- 日志区域 -->
+        <div class="logs-section">
+          <div class="section-title">📝 操作日志</div>
+          <div id="logs" class="logs-container">
+            <!-- 日志信息将在这里显示 -->
+          </div>
+        </div>
+      </div>
     </div>
 
-      <!-- 导入脚本 -->
-  <script type="module" src="../src/basic-dsl.ts"></script>
-</body>
-</html> 
+    <!-- 导入脚本 -->
+    <script type="module">
+      import {
+        initBasicScene,
+        addCube,
+        addSphere,
+        addPlane,
+        addCylinder,
+        changeToStandard,
+        changeToWireframe,
+        randomColors,
+        applyGolden,
+        toggleAmbient,
+        toggleDirectional,
+        addPointLight,
+        changeBackground,
+        resetCamera,
+        clearScene,
+        undo,
+        redo,
+        clearHistory
+      } from '../src/basic-scene.ts';
+
+      // 页面加载完成后初始化演示
+      window.addEventListener('DOMContentLoaded', async () => {
+        console.log('初始化基础场景演示...');
+        await initBasicScene();
+
+        // 将函数挂载到全局作用域供HTML按钮调用
+        window.addCube = addCube;
+        window.addSphere = addSphere;
+        window.addPlane = addPlane;
+        window.addCylinder = addCylinder;
+        window.changeToStandard = changeToStandard;
+        window.changeToWireframe = changeToWireframe;
+        window.randomColors = randomColors;
+        window.applyGolden = applyGolden;
+        window.toggleAmbient = toggleAmbient;
+        window.toggleDirectional = toggleDirectional;
+        window.addPointLight = addPointLight;
+        window.changeBackground = changeBackground;
+        window.resetCamera = resetCamera;
+        window.clearScene = clearScene;
+        window.undo = undo;
+        window.redo = redo;
+        window.clearHistory = clearHistory;
+
+        // 添加键盘快捷键
+        document.addEventListener('keydown', (e) => {
+          // Ctrl+Z 撤销
+          if (e.ctrlKey && e.key === 'z') {
+            e.preventDefault();
+            undo();
+          }
+          // Ctrl+Y 重做
+          if (e.ctrlKey && e.key === 'y') {
+            e.preventDefault();
+            redo();
+          }
+        });
+      });
+    </script>
+  </body>
+</html>

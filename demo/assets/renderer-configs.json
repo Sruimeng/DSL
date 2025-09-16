@@ -1,0 +1,303 @@
+{
+  "renderer": {
+    "api": "WebGL2",
+    "canvas": "#canvas",
+    "antialias": "msaa",
+    "samples": 4,
+    "quality": "high",
+    "pixelRatio": window.devicePixelRatio,
+    "background": {
+      "type": "color",
+      "color": [0.1, 0.1, 0.15]
+    },
+    "shadows": {
+      "enabled": true,
+      "size": [2048, 2048],
+      "type": "pcfSoft",
+      "camera": {
+        "near": 0.5,
+        "far": 50
+      },
+      "bias": 0.001,
+      "normalBias": 0.02,
+      "cascades": {
+        "count": 4,
+        "splits": [0.05, 0.15, 0.4, 1]
+      }
+    },
+    "toneMapping": {
+      "enabled": true,
+      "operator": "aces",
+      "exposure": 1.0,
+      "whitePoint": 1.0
+    },
+    "renderTargets": {
+      "color": {
+        "name": "color",
+        "format": "rgba16f",
+        "size": {
+          "width": 1920,
+          "height": 1080
+        },
+        "samples": 4,
+        "mipmaps": true,
+        "filter": "linear",
+        "wrap": "clamp",
+        "clearColor": [0, 0, 0, 0],
+        "clear": true
+      },
+      "depth": {
+        "name": "depth",
+        "format": "depth24",
+        "size": {
+          "width": 1920,
+          "height": 1080
+        },
+        "clear": true
+      },
+      "normal": {
+        "name": "normal",
+        "format": "rgba16f",
+        "size": {
+          "width": 1920,
+          "height": 1080
+        },
+        "filter": "linear",
+        "wrap": "clamp"
+      },
+      "gbuffer0": {
+        "name": "gbuffer0",
+        "format": "rgba16f",
+        "size": {
+          "width": 1920,
+          "height": 1080
+        },
+        "filter": "linear",
+        "wrap": "clamp"
+      },
+      "gbuffer1": {
+        "name": "gbuffer1",
+        "format": "rgba16f",
+        "size": {
+          "width": 1920,
+          "height": 1080
+        },
+        "filter": "linear",
+        "wrap": "clamp"
+      }
+    },
+    "renderPasses": [
+      {
+        "name": "shadow",
+        "type": "shadow",
+        "enabled": true,
+        "targets": ["depth"],
+        "order": 1
+      },
+      {
+        "name": "gbuffer",
+        "type": "gbuffer",
+        "enabled": true,
+        "targets": ["gbuffer0", "gbuffer1", "normal", "depth"],
+        "inputs": [],
+        "outputs": ["gbuffer0", "gbuffer1", "normal", "depth"],
+        "order": 2
+      },
+      {
+        "name": "lighting",
+        "type": "lighting",
+        "enabled": true,
+        "targets": ["color"],
+        "inputs": ["gbuffer0", "gbuffer1", "normal", "depth"],
+        "outputs": ["color"],
+        "order": 3,
+        "settings": {
+          "maxLights": 32,
+          "enableShadows": true,
+          "enableSSAO": true,
+          "enableSSR": true
+        }
+      },
+      {
+        "name": "reflection",
+        "type": "reflection",
+        "enabled": true,
+        "targets": ["color"],
+        "inputs": ["color", "gbuffer0", "gbuffer1", "normal", "depth"],
+        "outputs": ["color"],
+        "order": 4,
+        "settings": {
+          "maxRoughness": 0.6,
+          "rayStep": 0.1,
+          "maxDistance": 50,
+          "iterations": 32
+        }
+      },
+      {
+        "name": "bloom",
+        "type": "postprocess",
+        "enabled": true,
+        "targets": ["color"],
+        "inputs": ["color"],
+        "outputs": ["color"],
+        "order": 5,
+        "settings": {
+          "threshold": 0.8,
+          "intensity": 0.5,
+          "radius": 0.4
+        }
+      },
+      {
+        "name": "tonemapping",
+        "type": "postprocess",
+        "enabled": true,
+        "targets": ["color"],
+        "inputs": ["color"],
+        "outputs": ["color"],
+        "order": 6,
+        "settings": {
+          "operator": "aces",
+          "exposure": 1.0
+        }
+      },
+      {
+        "name": "fxaa",
+        "type": "postprocess",
+        "enabled": true,
+        "targets": ["color"],
+        "inputs": ["color"],
+        "outputs": ["color"],
+        "order": 7
+      },
+      {
+        "name": "composite",
+        "type": "composite",
+        "enabled": true,
+        "targets": ["color"],
+        "inputs": ["color"],
+        "outputs": ["color"],
+        "order": 8
+      }
+    ],
+    "postProcess": [
+      {
+        "name": "bloom",
+        "enabled": true,
+        "parameters": {
+          "threshold": 0.8,
+          "intensity": 0.5,
+          "radius": 0.4
+        },
+        "order": 1
+      },
+      {
+        "name": "vignette",
+        "enabled": true,
+        "parameters": {
+          "intensity": 0.3,
+          "roundness": 0.5,
+          "smoothness": 0.5
+        },
+        "order": 2
+      },
+      {
+        "name": "colorGrading",
+        "enabled": true,
+        "parameters": {
+          "contrast": 1.1,
+          "saturation": 1.05,
+          "brightness": 1.0,
+          "temperature": 0,
+          "tint": 0
+        },
+        "order": 3
+      },
+      {
+        "name": "grain",
+        "enabled": true,
+        "parameters": {
+          "intensity": 0.1,
+          "size": 1.0,
+          "luminanceInfluence": 0.5
+        },
+        "order": 4
+      }
+    ],
+    "debug": {
+      "wireframe": false,
+      "normals": false,
+      "bounds": false,
+      "lights": false,
+      "shadows": false
+    },
+    "performance": {
+      "adaptiveQuality": true,
+      "targetFPS": 60,
+      "lodBias": 0
+    }
+  },
+  "scene": {
+    "autoUpdate": true,
+    "enablePhysics": false,
+    "enableAnimation": true,
+    "defaultUpAxis": "Y"
+  },
+  "assets": {
+    "basePath": "./assets/",
+    "enableCache": true,
+    "maxCacheSize": 512,
+    "assetLoaders": {
+      "gltf": "./loaders/GLTFLoader.js",
+      "obj": "./loaders/OBJLoader.js",
+      "texture": "./loaders/TextureLoader.js"
+    }
+  },
+  "debug": {
+    "enabled": false,
+    "showStats": true,
+    "showWireframe": false,
+    "showBounds": false,
+    "logLevel": "info"
+  },
+  "performance": {
+    "targetFPS": 60,
+    "adaptiveQuality": true,
+    "enableProfiling": false
+  },
+  "outputs": [
+    {
+      "name": "main",
+      "type": "image",
+      "format": "png",
+      "resolution": {
+        "width": 1920,
+        "height": 1080
+      },
+      "frameRange": {
+        "start": 1,
+        "end": 100
+      },
+      "settings": {
+        "quality": 100
+      }
+    },
+    {
+      "name": "video",
+      "type": "video",
+      "format": "mp4",
+      "resolution": {
+        "width": 1920,
+        "height": 1080
+      },
+      "frameRange": {
+        "start": 1,
+        "end": 100
+      },
+      "settings": {
+        "quality": "high",
+        "bitrate": 8000000,
+        "fps": 24
+      }
+    }
+  ]
+}

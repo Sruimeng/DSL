@@ -1,0 +1,334 @@
+{
+  "metadata": {
+    "defaultPrim": "World",
+    "upAxis": "Y",
+    "timeCodesPerSecond": 24,
+    "authoredBy": "DSL Camera Setups Demo",
+    "created": "2024-01-01T00:00:00Z"
+  },
+  "layer": {
+    "identifier": "camera-setups.usd",
+    "version": "1.0",
+    "comment": "相机设置演示"
+  },
+  "prims": [
+    {
+      "name": "World",
+      "type": "Xform",
+      "xformOpOrder": ["xformOp:translate"],
+      "transform": {
+        "translate": [0, 0, 0]
+      },
+      "children": [
+        {
+          "name": "CameraRigs",
+          "type": "Scope",
+          "children": [
+            {
+              "name": "PerspectiveCamera",
+              "type": "Camera",
+              "attributes": {
+                "projection": "perspective",
+                "horizontalAperture": 36,
+                "verticalAperture": 24,
+                "focalLength": 50,
+                "clippingRange": [0.1, 1000],
+                "exposure": {
+                  "exposure": 0,
+                  "iso": 100
+                }
+              },
+              "transform": {
+                "translate": [5, 3, 8],
+                "rotate": [-20, 30, 0]
+              },
+              "stereo": {
+                "mode": "none"
+              }
+            },
+            {
+              "name": "WideAngleCamera",
+              "type": "Camera",
+              "attributes": {
+                "projection": "perspective",
+                "horizontalAperture": 36,
+                "verticalAperture": 24,
+                "focalLength": 24,
+                "clippingRange": [0.1, 1000]
+              },
+              "transform": {
+                "translate": [-5, 3, 8],
+                "rotate": [-20, -30, 0]
+              }
+            },
+            {
+              "name": "TelephotoCamera",
+              "type": "Camera",
+              "attributes": {
+                "projection": "perspective",
+                "horizontalAperture": 36,
+                "verticalAperture": 24,
+                "focalLength": 135,
+                "clippingRange": [0.1, 1000],
+                "dof": {
+                  "focusDistance": 10,
+                  "fStop": 2.8
+                }
+              },
+              "transform": {
+                "translate": [0, 5, 12],
+                "rotate": [-25, 0, 0]
+              }
+            },
+            {
+              "name": "OrthographicCamera_Top",
+              "type": "Camera",
+              "attributes": {
+                "projection": "orthographic",
+                "horizontalAperture": 20,
+                "verticalAperture": 20,
+                "clippingRange": [0.1, 1000]
+              },
+              "transform": {
+                "translate": [0, 15, 0],
+                "rotate": [-90, 0, 0]
+              }
+            },
+            {
+              "name": "OrthographicCamera_Front",
+              "type": "Camera",
+              "attributes": {
+                "projection": "orthographic",
+                "horizontalAperture": 20,
+                "verticalAperture": 20,
+                "clippingRange": [0.1, 1000]
+              },
+              "transform": {
+                "translate": [0, 5, 15],
+                "rotate": [0, 0, 0]
+              }
+            },
+            {
+              "name": "StereoCamera_Left",
+              "type": "Camera",
+              "attributes": {
+                "projection": "perspective",
+                "horizontalAperture": 36,
+                "verticalAperture": 24,
+                "focalLength": 50,
+                "clippingRange": [0.1, 1000]
+              },
+              "stereo": {
+                "mode": "left",
+                "interocularDistance": 0.065,
+                "convergenceDistance": 10
+              },
+              "transform": {
+                "translate": [10, 3, 8],
+                "rotate": [-20, 45, 0]
+              }
+            },
+            {
+              "name": "StereoCamera_Right",
+              "type": "Camera",
+              "attributes": {
+                "projection": "perspective",
+                "horizontalAperture": 36,
+                "verticalAperture": 24,
+                "focalLength": 50,
+                "clippingRange": [0.1, 1000]
+              },
+              "stereo": {
+                "mode": "right",
+                "interocularDistance": 0.065,
+                "convergenceDistance": 10
+              },
+              "transform": {
+                "translate": [10, 3, 8],
+                "rotate": [-20, 45, 0]
+              }
+            }
+          ]
+        },
+        {
+          "name": "CameraControls",
+          "type": "Scope",
+          "children": [
+            {
+              "name": "CameraRig_ArcBall",
+              "type": "Xform",
+              "transform": {
+                "translate": [0, 5, 10],
+                "rotate": [-30, 45, 0]
+              },
+              "children": [
+                {
+                  "name": "Camera_ArcBall",
+                  "type": "Camera",
+                  "attributes": {
+                    "projection": "perspective",
+                    "horizontalAperture": 36,
+                    "verticalAperture": 24,
+                    "focalLength": 50,
+                    "clippingRange": [0.1, 1000]
+                  },
+                  "customData": {
+                    "controls": {
+                      "type": "arcball",
+                      "target": [0, 2, 0],
+                      "minDistance": 5,
+                      "maxDistance": 30,
+                      "enableDamping": true,
+                      "dampingFactor": 0.05
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "name": "CameraRig_FirstPerson",
+              "type": "Xform",
+              "transform": {
+                "translate": [0, 1.8, 5],
+                "rotate": [0, 0, 0]
+              },
+              "children": [
+                {
+                  "name": "Camera_FirstPerson",
+                  "type": "Camera",
+                  "attributes": {
+                    "projection": "perspective",
+                    "horizontalAperture": 36,
+                    "verticalAperture": 24,
+                    "focalLength": 60,
+                    "clippingRange": [0.1, 1000]
+                  },
+                  "customData": {
+                    "controls": {
+                      "type": "firstPerson",
+                      "moveSpeed": 5,
+                      "lookSpeed": 0.002,
+                      "enableJump": true,
+                      "jumpHeight": 2
+                    }
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "name": "Scene",
+          "type": "Xform",
+          "children": [
+            {
+              "name": "Lights",
+              "type": "Xform",
+              "children": [
+                {
+                  "name": "SunLight",
+                  "type": "Light",
+                  "lightType": "distant",
+                  "color": [1, 0.95, 0.9],
+                  "intensity": 2000,
+                  "transform": {
+                    "translate": [5, 10, 5],
+                    "rotate": [-45, -45, 0]
+                  },
+                  "shadow": {
+                    "enable": true,
+                    "resolution": [2048, 2048]
+                  }
+                },
+                {
+                  "name": "AmbientLight",
+                  "type": "Light",
+                  "lightType": "dome",
+                  "color": [0.8, 0.9, 1],
+                  "intensity": 0.3
+                }
+              ]
+            },
+            {
+              "name": "Geometry",
+              "type": "Xform",
+              "children": [
+                {
+                  "name": "Grid_Floor",
+                  "type": "Mesh",
+                  "purpose": "proxy",
+                  "points": [
+                    [-10, 0, -10], [10, 0, -10], [10, 0, 10], [-10, 0, 10]
+                  ],
+                  "faceVertexCounts": [4],
+                  "faceVertexIndices": [0, 1, 2, 3],
+                  "displayColor": {
+                    "values": [[0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5], [0.5, 0.5, 0.5]],
+                    "interpolation": "uniform"
+                  }
+                },
+                {
+                  "name": "TestChart",
+                  "type": "Mesh",
+                  "purpose": "default",
+                  "transform": {
+                    "translate": [0, 1, 0]
+                  },
+                  "points": [
+                    [-2, 0, -2], [2, 0, -2], [2, 0, 2], [-2, 0, 2]
+                  ],
+                  "faceVertexCounts": [4],
+                  "faceVertexIndices": [0, 1, 2, 3],
+                  "primvars": {
+                    "st": {
+                      "values": [[0, 0], [1, 0], [1, 1], [0, 1]],
+                      "interpolation": "vertex"
+                    },
+                    "displayColor": {
+                      "values": [
+                        [1, 0, 0], [1, 1, 0], [0, 1, 0], [0, 1, 1],
+                        [0, 0, 1], [1, 0, 1], [1, 1, 1], [0, 0, 0]
+                      ],
+                      "interpolation": "vertex"
+                    }
+                  }
+                },
+                {
+                  "name": "CameraFrustum_Visualization",
+                  "type": "Xform",
+                  "transform": {
+                    "translate": [0, 3, -5],
+                    "rotate": [0, 180, 0]
+                  },
+                  "children": [
+                    {
+                      "name": "Frustum",
+                      "type": "Mesh",
+                      "purpose": "guide",
+                      "points": [
+                        [-1, -0.75, -2], [1, -0.75, -2], [1, 0.75, -2], [-1, 0.75, -2],
+                        [-0.5, -0.375, 0], [0.5, -0.375, 0], [0.5, 0.375, 0], [-0.5, 0.375, 0]
+                      ],
+                      "faceVertexCounts": [4, 4, 4, 4, 4, 4],
+                      "faceVertexIndices": [
+                        0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 5, 4,
+                        1, 2, 6, 5, 2, 3, 7, 6, 3, 0, 4, 7
+                      ],
+                      "displayColor": {
+                        "values": [
+                          [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0],
+                          [0, 1, 0], [0, 1, 0], [0, 1, 0], [0, 1, 0]
+                        ],
+                        "interpolation": "uniform"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
