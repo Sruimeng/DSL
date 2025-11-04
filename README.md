@@ -251,64 +251,102 @@ async function main() {
 main().catch(console.error);
 ```
 
-### 4.1 主要问题
+## 4. React 项目集成示例
 
-1. **导出结构不完整**：index.ts 导出错误。
-2. **重复类型定义**：`geometry.ts` 和 `primitive.ts` 中存在重复。
-3. **命名不一致**：类型命名缺乏统一规范。
-4. **过度使用 unknown 类型**：降低类型安全性。
-5. **类型定义过于复杂**：缺乏必需属性定义。
-6. **缺少类型约束和验证**：可能接受无效值。
-7. **循环依赖风险**：模块间潜在依赖问题。
-
-### 4.2 解决方案
-
-#### 修复导出结构
+### 1. 创建 React 组件包装 DSL 引擎
 
 ```typescript
-export * from './common';
-export * from './scene';
-export * from './camera';
-export * from './renderer';
-export * from './geometry';
-export * from './material';
-export * from './light';
-export * from './animation';
-export * from './primitive';
-export * from './engine';
+import React, { createContext, useContext, useEffect, useRef } from 'react';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { DSLEngine } from '../core/DSL-engine';
+import { USDLoader } from '../core/USD-loader';
+
+const DSLEngineContext = createContext<DSLEngine | null>(null);
+
+export const DSLEngineProvider: React.FC<{ usdUrl: string; children: React.ReactNode }> = ({ usdUrl, children }) => {
+  const engineRef = useRef<DSLEngine | null>(null);
+
+  useEffect(() => {
+    const initEngine = async () => {
+      const usdJson = await USDLoader.load(usdUrl);
+      const engine = new DSLEngine();
+      await engine.loadDSL(usdJson);
+      engineRef.current = engine;
+    };
+    initEngine();
+  }, [usdUrl]);
+
+  return (
+    <DSLEngineContext.Provider value={engineRef.current}>
+      {children}
+    </DSLEngineContext.Provider>
+  );
+};
+
+export const useDSLEngine = () => {
+  const engine = useContext(DSLEngineContext);
+  if (!engine) throw new Error('useDSLEngine must be used within DSLEngineProvider');
+  return engine;
+};
 ```
 
-#### 统一几何体定义
+### 2. 在 React 组件中使用 DSL 对象
 
 ```typescript
-export interface CubePrim extends USDPrim {
-  type: 'Cube';
-  size: number;
-  center?: Vector3;
-}
+import React from 'react';
+import { useFrame } from '@react-three/fiber';
+import { useDSLEngine } from './DSLEngineProvider';
+
+export const DSLScene: React.FC = () => {
+  const engine = useDSLEngine();
+
+  useFrame(() => {
+    // 更新 DSL 引擎状态
+    engine.update();
+  });
+
+  return (
+    <>
+      {/* 渲染 DSL 中的对象 */}
+      {engine.getSceneObjects().map((obj) => (
+        <primitive key={obj.name} object={obj} />
+      ))}
+    </>
+  );
+};
 ```
 
-#### 改进类型安全性
+### 3. 集成到 React 应用
 
 ```typescript
-export interface EventData {
-  [EventType.SCENE_LOADED]: { sceneId: string };
-  [EventType.OBJECT_ADDED]: { objectId: string; object: THREE.Object3D };
+import React from 'react';
+import { Canvas } from '@react-three/fiber';
+import { DSLEngineProvider, DSLScene } from '../../src/react';
+
+function App() {
+  return (
+    <Canvas>
+      <DSLEngineProvider usdUrl="/assets/basic-scene.json">
+        <DSLScene />
+      </DSLEngineProvider>
+    </Canvas>
+  );
 }
 
-export type EventHandler<T extends EventType> = (data: EventData[T]) => void;
+export default App;
 ```
 
-#### 添加类型验证
+### 4. 添加 React 钩子用于动作
 
 ```typescript
-export class TypeValidator {
-  static validateUSDPrim(prim: any): prim is USDPrim {
-    return (
-      typeof prim === 'object' &&
-      typeof prim.name === 'string' &&
-      typeof prim.type === 'string'
-    );
-  }
-}
+import { useCallback } from 'react';
+import { useDSLEngine } from './DSLEngineProvider';
+
+export const useDSLAction = (actionName: string) => {
+  const engine = useDSLEngine();
+
+  return useCallback((params: any) => {
+    return engine.executeAction(actionName, params);
+  }, [engine, actionName]);
+};
 ```

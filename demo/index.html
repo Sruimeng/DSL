@@ -1,599 +1,267 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Three.js USD DSL - Demo Center</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
-      color: #333;
-      min-height: 100vh;
-    }
-
-    .container {
-      max-width: 1400px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-
-    header {
-      text-align: center;
-      padding: 40px 0;
-      color: white;
-    }
-
-    header h1 {
-      font-size: 3em;
-      margin-bottom: 10px;
-      text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
-    }
-
-    header p {
-      font-size: 1.2em;
-      opacity: 0.9;
-    }
-
-    .demo-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-      gap: 25px;
-      margin-top: 40px;
-    }
-
-    .demo-card {
-      background: white;
-      border-radius: 12px;
-      padding: 30px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .demo-card::before {
-      content: '';
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      height: 4px;
-      background: linear-gradient(90deg, #007bff, #0056b3);
-    }
-
-    .demo-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-    }
-
-    .demo-card h2 {
-      color: #2c3e50;
-      margin-bottom: 15px;
-      font-size: 1.5em;
-    }
-
-    .demo-card p {
-      color: #666;
-      line-height: 1.6;
-      margin-bottom: 20px;
-    }
-
-    .demo-card .tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-bottom: 20px;
-    }
-
-    .demo-card .tag {
-      background: #e9ecef;
-      color: #495057;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 0.85em;
-    }
-
-    .demo-card .actions {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .demo-card .actions-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .demo-card button {
-      flex: 1;
-      padding: 12px 20px;
-      border: none;
-      border-radius: 6px;
-      font-size: 1em;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      font-weight: 500;
-    }
-
-    .btn-primary {
-      background: #007bff;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #0056b3;
-      transform: translateY(-2px);
-    }
-
-    .btn-secondary {
-      background: #6c757d;
-      color: white;
-    }
-
-    .btn-secondary:hover {
-      background: #545b62;
-      transform: translateY(-2px);
-    }
-
-    .demo-preview {
-      width: 100%;
-      height: 200px;
-      background: #f8f9fa;
-      border-radius: 8px;
-      margin-bottom: 20px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: #6c757d;
-      font-style: italic;
-      overflow: hidden;
-    }
-
-    .demo-preview img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .footer {
-      text-align: center;
-      padding: 40px 0;
-      color: white;
-      opacity: 0.8;
-    }
-
-    .footer a {
-      color: white;
-      text-decoration: none;
-      border-bottom: 1px solid rgba(255,255,255,0.3);
-      padding-bottom: 2px;
-    }
-
-    .footer a:hover {
-      border-bottom-color: white;
-    }
-
-    .status-indicator {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-      background: #28a745;
-    }
-
-    .status-indicator.new {
-      background: #ffc107;
-      animation: pulse 2s infinite;
-    }
-
-    @keyframes pulse {
-      0% {
-        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
-      }
-      70% {
-        box-shadow: 0 0 0 10px rgba(255, 193, 7, 0);
-      }
-      100% {
-        box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
-      }
-    }
-
-    @media (max-width: 768px) {
-      .demo-grid {
-        grid-template-columns: 1fr;
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Three.js USD DSL - Demo Center</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
       }
 
-      header h1 {
-        font-size: 2em;
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+        color: #333;
+        min-height: 100vh;
       }
 
       .container {
-        padding: 10px;
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 20px;
       }
-    }
 
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.8);
-      z-index: 1000;
-      align-items: center;
-      justify-content: center;
-    }
+      header {
+        text-align: center;
+        padding: 40px 0;
+        color: white;
+      }
 
-    .modal.active {
-      display: flex;
-    }
+      header h1 {
+        font-size: 3em;
+        margin-bottom: 10px;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+      }
 
-    .modal-content {
-      background: white;
-      padding: 30px;
-      border-radius: 12px;
-      max-width: 600px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-    }
+      header p {
+        font-size: 1.2em;
+        opacity: 0.9;
+      }
 
-    .modal-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-    }
+      .demo-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        gap: 25px;
+        margin-top: 40px;
+      }
 
-    .modal-close {
-      font-size: 30px;
-      cursor: pointer;
-      color: #999;
-    }
+      .demo-card {
+        background: white;
+        border-radius: 12px;
+        padding: 30px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        transition: transform 0.3s ease;
+      }
 
-    .modal-close:hover {
-      color: #333;
-    }
+      .demo-card:hover {
+        transform: translateY(-5px);
+      }
 
-    pre {
-      background: #f8f9fa;
-      padding: 15px;
-      border-radius: 6px;
-      overflow-x: auto;
-      font-size: 0.9em;
-    }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <h1>Three.js USD DSL</h1>
-      <p>A Domain Specific Language for USD (Universal Scene Description) integration with Three.js</p>
-    </header>
+      .demo-card h2 {
+        color: #2c3e50;
+        margin-bottom: 15px;
+        font-size: 1.5em;
+      }
 
-    <div class="demo-grid">
-      <!-- Basic DSL Demo -->
-      <div class="demo-card">
-        <span class="status-indicator"></span>
-        <h2>Basic DSL</h2>
-        <div class="demo-preview">
-          <img src="assets/basic-preview.png" alt="Basic DSL Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div style="display: none;">Basic 3D Scene Preview</div>
-        </div>
-        <p>Create simple 3D scenes with basic geometries, materials, and lighting. Perfect for getting started with the DSL.</p>
-        <div class="tags">
-          <span class="tag">Beginner</span>
-          <span class="tag">Geometry</span>
-          <span class="tag">Lighting</span>
-        </div>
-        <div class="actions">
-          <div class="actions-row">
-            <button class="btn-primary" onclick="openDemo('basic-dsl.html')">打开演示</button>
-            <button class="btn-secondary" onclick="runDemoDirectly('basic-scene')">直接运行</button>
+      .demo-card p {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 20px;
+      }
+
+      .demo-card .actions {
+        display: flex;
+        gap: 10px;
+      }
+
+      .demo-card button {
+        flex: 1;
+        padding: 12px 20px;
+        border: none;
+        border-radius: 6px;
+        font-size: 1em;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 500;
+      }
+
+      .btn-primary {
+        background: #007bff;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #0056b3;
+      }
+
+      .btn-secondary {
+        background: #6c757d;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #545b62;
+      }
+
+      .footer {
+        text-align: center;
+        padding: 40px 0;
+        color: white;
+        opacity: 0.8;
+      }
+
+      .footer a {
+        color: white;
+        text-decoration: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Three.js USD DSL</h1>
+        <p>
+          A Domain Specific Language for USD (Universal Scene Description) integration with Three.js
+        </p>
+      </header>
+
+      <div class="demo-grid">
+        <!-- Basic DSL Demo -->
+        <div class="demo-card">
+          <h2>Basic DSL</h2>
+          <p>
+            Create simple 3D scenes with basic geometries, materials, and lighting. Perfect for
+            getting started.
+          </p>
+          <div class="actions">
+            <button class="btn-primary" onclick="window.open('html/basic-dsl.html', '_blank')">
+              Open Demo
+            </button>
+            <button
+              class="btn-secondary"
+              onclick="window.open('examples/basic-scene.html', '_blank')"
+            >
+              View Source
+            </button>
           </div>
-          <button class="btn-secondary" onclick="showDetails('basic')">详情</button>
+        </div>
+
+        <!-- Material DSL Demo -->
+        <div class="demo-card">
+          <h2>Material System</h2>
+          <p>
+            Explore advanced materials including PBR, physically-based rendering, and complex shader
+            networks.
+          </p>
+          <div class="actions">
+            <button class="btn-primary" onclick="window.open('html/material-dsl.html', '_blank')">
+              Open Demo
+            </button>
+            <button
+              class="btn-secondary"
+              onclick="window.open('examples/material-demo.html', '_blank')"
+            >
+              View Source
+            </button>
+          </div>
+        </div>
+
+        <!-- GLTF Model Demo -->
+        <div class="demo-card">
+          <h2>GLTF Models</h2>
+          <p>
+            Load and display 3D models in GLTF format with animations, materials, and complex
+            hierarchies.
+          </p>
+          <div class="actions">
+            <button class="btn-primary" onclick="window.open('html/gltf-demo.html', '_blank')">
+              Open Demo
+            </button>
+            <button
+              class="btn-secondary"
+              onclick="window.open('examples/model-demo.html', '_blank')"
+            >
+              View Source
+            </button>
+          </div>
+        </div>
+
+        <!-- Plugin Demo -->
+        <div class="demo-card">
+          <h2>Plugin System</h2>
+          <p>Extend functionality with custom plugins for rendering, interaction, and more.</p>
+          <div class="actions">
+            <button class="btn-primary" onclick="window.open('html/plugin-demo.html', '_blank')">
+              Open Demo
+            </button>
+            <button
+              class="btn-secondary"
+              onclick="window.open('examples/plugin-demo.html', '_blank')"
+            >
+              View Source
+            </button>
+          </div>
+        </div>
+
+        <!-- MCP Demo -->
+        <div class="demo-card">
+          <h2>MCP Integration</h2>
+          <p>AI-powered scene generation and manipulation through Model Context Protocol.</p>
+          <div class="actions">
+            <button class="btn-primary" onclick="window.open('html/mcp-demo.html', '_blank')">
+              Open Demo
+            </button>
+            <button class="btn-secondary" onclick="window.open('examples/mcp-demo.html', '_blank')">
+              View Source
+            </button>
+          </div>
+        </div>
+
+        <!-- Undo/Redo Demo -->
+        <div class="demo-card">
+          <h2>Undo/Redo System</h2>
+          <p>Complete undo/redo functionality with command pattern for all scene operations.</p>
+          <div class="actions">
+            <button class="btn-primary" onclick="window.open('html/undo-redo-demo.html', '_blank')">
+              Open Demo
+            </button>
+            <button
+              class="btn-secondary"
+              onclick="window.open('examples/undo-redo-demo.html', '_blank')"
+            >
+              View Source
+            </button>
+          </div>
         </div>
       </div>
 
-      <!-- Material DSL Demo -->
-      <div class="demo-card">
-        <span class="status-indicator new"></span>
-        <h2>Material System</h2>
-        <div class="demo-preview">
-          <img src="assets/material-preview.png" alt="Material Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div style="display: none;">Material System Preview</div>
-        </div>
-        <p>Explore advanced materials including PBR, physically-based rendering, and complex shader networks.</p>
-        <div class="tags">
-          <span class="tag">Advanced</span>
-          <span class="tag">PBR</span>
-          <span class="tag">Materials</span>
-        </div>
-        <div class="actions">
-          <button class="btn-primary" onclick="openDemo('material-dsl.html')">Open Demo</button>
-          <button class="btn-secondary" onclick="showDetails('material')">Details</button>
-        </div>
-      </div>
-
-      <!-- GLTF Model Demo -->
-      <div class="demo-card">
-        <span class="status-indicator"></span>
-        <h2>GLTF Models</h2>
-        <div class="demo-preview">
-          <img src="assets/gltf-preview.png" alt="GLTF Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div style="display: none;">3D Model Preview</div>
-        </div>
-        <p>Load and display 3D models in GLTF format with animations, materials, and complex hierarchies.</p>
-        <div class="tags">
-          <span class="tag">Models</span>
-          <span class="tag">GLTF</span>
-          <span class="tag">Animation</span>
-        </div>
-        <div class="actions">
-          <button class="btn-primary" onclick="openDemo('gltf-demo.html')">Open Demo</button>
-          <button class="btn-secondary" onclick="showDetails('gltf')">Details</button>
-        </div>
-      </div>
-
-      <!-- Node Tree Demo -->
-      <div class="demo-card">
-        <span class="status-indicator"></span>
-        <h2>Node Tree Editor</h2>
-        <div class="demo-preview">
-          <img src="assets/node-tree-preview.png" alt="Node Tree Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div style="display: none;">Node Tree Editor Preview</div>
-        </div>
-        <p>Visual node-based scene editor with support for instancing, references, and complex relationships.</p>
-        <div class="tags">
-          <span class="tag">Editor</span>
-          <span class="tag">Nodes</span>
-          <span class="tag">Visual</span>
-        </div>
-        <div class="actions">
-          <button class="btn-primary" onclick="openDemo('node-tree-dsl.html')">Open Demo</button>
-          <button class="btn-secondary" onclick="showDetails('node-tree')">Details</button>
-        </div>
-      </div>
-
-      <!-- Undo/Redo Demo -->
-      <div class="demo-card">
-        <span class="status-indicator new"></span>
-        <h2>Undo/Redo System</h2>
-        <div class="demo-preview">
-          <img src="assets/undo-redo-preview.png" alt="Undo/Redo Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div style="display: none;">Undo/Redo System Preview</div>
-        </div>
-        <p>Complete undo/redo functionality with command pattern for all scene operations.</p>
-        <div class="tags">
-          <span class="tag">System</span>
-          <span class="tag">History</span>
-          <span class="tag">Commands</span>
-        </div>
-        <div class="actions">
-          <button class="btn-primary" onclick="openDemo('undo-redo-demo.html')">Open Demo</button>
-          <button class="btn-secondary" onclick="showDetails('undo-redo')">Details</button>
-        </div>
-      </div>
-
-      <!-- MCP Integration Demo -->
-      <div class="demo-card">
-        <span class="status-indicator new"></span>
-        <h2>MCP Integration</h2>
-        <div class="demo-preview">
-          <img src="assets/mcp-preview.png" alt="MCP Preview" onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-          <div style="display: none;">MCP Integration Preview</div>
-        </div>
-        <p>AI-powered scene generation and manipulation through Model Context Protocol.</p>
-        <div class="tags">
-          <span class="tag">AI</span>
-          <span class="tag">MCP</span>
-          <span class="tag">Automation</span>
-        </div>
-        <div class="actions">
-          <button class="btn-primary" onclick="openMCPDemo()">Open Demo</button>
-          <button class="btn-secondary" onclick="showDetails('mcp')">Details</button>
-        </div>
-      </div>
+      <footer class="footer">
+        <p>
+          Built with ❤️ using <a href="https://threejs.org" target="_blank">Three.js</a> and
+          <a href="https://github.com/PixarAnimationStudios/USD" target="_blank">USD</a>
+        </p>
+      </footer>
     </div>
 
-    <footer>
-      <p>Built with ❤️ using <a href="https://threejs.org" target="_blank">Three.js</a> and <a href="https://github.com/PixarAnimationStudios/USD" target="_blank">USD</a></p>
-      <p style="margin-top: 10px; font-size: 0.9em;">
-        <a href="https://github.com/your-repo/dsl" target="_blank">View on GitHub</a> |
-        <a href="../../docs/overview.html" target="_blank">Documentation</a>
-      </p>
-    </footer>
-  </div>
+    <script>
+      // Add simple interactive effects
+      document.addEventListener('DOMContentLoaded', function () {
+        const cards = document.querySelectorAll('.demo-card');
 
-  <!-- Modal for demo details -->
-  <div id="detailsModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2 id="modalTitle">Demo Details</h2>
-        <span class="modal-close" onclick="closeModal()">&times;</span>
-      </div>
-      <div id="modalBody">
-        <!-- Dynamic content -->
-      </div>
-    </div>
-  </div>
+        cards.forEach((card) => {
+          card.style.opacity = '0';
+          card.style.transform = 'translateY(20px)';
+          card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
 
-  <script type="module">
-    // 导入演示索引
-    import { demos, findDemo, runDemo } from './src/index.ts';
-
-    // 调试：显示已加载的演示
-    console.log('已加载的演示:', demos.map(d => d.name));
-
-    const demoDetails = {
-      basic: {
-        title: '基础 DSL 演示',
-        content: `
-          <p>这个演示展示了 Three.js USD DSL 的基础知识：</p>
-          <ul>
-            <li>创建基础几何体（立方体、球体、圆柱体等）</li>
-            <li>应用标准材质和颜色属性</li>
-            <li>设置灯光（环境光、平行光、点光源）</li>
-            <li>定位相机用于场景查看</li>
-            <li>完整的撤销/重做功能</li>
-            <li>实时操作日志</li>
-            <li>对象创建、材质控制、灯光控制、场景管理</li>
-          </ul>
-          <p><strong>建议先尝试这个</strong>来理解 DSL 的基本结构和语法。</p>
-        `
-      },
-      material: {
-        title: '材质系统演示',
-        content: `
-          <p>高级材质功能：</p>
-          <ul>
-            <li>基于物理的渲染（PBR）材质</li>
-            <li>纹理映射和UV坐标</li>
-            <li>材质属性（粗糙度、金属度、清漆层）</li>
-            <li>自定义着色器材质</li>
-            <li>材质实例和变化</li>
-          </ul>
-          <p>学习如何为场景创建逼真的材质。</p>
-        `
-      },
-      gltf: {
-        title: 'GLTF 模型演示',
-        content: `
-          <p>使用3D模型：</p>
-          <ul>
-            <li>加载GLTF/GLB模型文件</li>
-            <li>处理模型动画</li>
-            <li>材质和纹理管理</li>
-            <li>骨骼和蒙皮支持</li>
-            <li>优化模型性能</li>
-          </ul>
-          <p>将现有的3D资源集成到DSL场景中。</p>
-        `
-      },
-      'node-tree': {
-        title: '节点树编辑器演示',
-        content: `
-          <p>可视化场景编辑：</p>
-          <ul>
-            <li>交互式节点树可视化</li>
-            <li>拖放场景层次结构编辑</li>
-            <li>用于微调的属性面板</li>
-            <li>实时预览更新</li>
-            <li>导出/导入场景配置</li>
-          </ul>
-          <p>无需编写代码即可可视化构建复杂场景。</p>
-        `
-      },
-      'undo-redo': {
-        title: '撤销/重做系统演示',
-        content: `
-          <p>完整的历史管理：</p>
-          <ul>
-            <li>命令模式实现</li>
-            <li>无限制的撤销/重做操作</li>
-            <li>场景状态快照</li>
-            <li>分支历史时间线</li>
-            <li>宏录制和播放</li>
-          </ul>
-          <p>通过强大的历史跟踪功能，永远不会丢失工作。</p>
-        `
-      },
-      mcp: {
-        title: 'MCP 集成演示',
-        content: `
-          <p>AI驱动的场景创建：</p>
-          <ul>
-            <li>自然语言场景描述</li>
-            <li>AI生成的3D场景</li>
-            <li>智能对象放置</li>
-            <li>自动灯光设置</li>
-            <li>风格转换和变化</li>
-          </ul>
-          <p>体验AI驱动的3D内容创作的未来。</p>
-          <pre><code>// 示例MCP命令
-"创建一个带有床、床头柜和温暖灯光的舒适卧室"</code></pre>
-        `
-      }
-    };
-
-    function openDemo(url) {
-      window.open(`html/${url}`, '_blank');
-    }
-
-    function openMCPDemo() {
-      window.open('../examples/mcp-demo.html', '_blank');
-    }
-
-    // 新增：直接运行演示的功能
-    async function runDemoDirectly(demoName) {
-      const demo = findDemo(demoName);
-      if (demo) {
-        try {
-          console.log(`正在运行演示: ${demo.name}`);
-          await runDemo(demoName);
-        } catch (error) {
-          console.error(`运行演示失败:`, error);
-          alert(`运行演示失败: ${error.message}`);
-        }
-      } else {
-        console.error(`找不到演示: ${demoName}`);
-      }
-    }
-
-    function showDetails(demo) {
-      const modal = document.getElementById('detailsModal');
-      const title = document.getElementById('modalTitle');
-      const body = document.getElementById('modalBody');
-
-      const details = demoDetails[demo];
-      title.textContent = details.title;
-      body.innerHTML = details.content;
-
-      modal.classList.add('active');
-    }
-
-    function closeModal() {
-      document.getElementById('detailsModal').classList.remove('active');
-    }
-
-    // Close modal when clicking outside
-    window.onclick = function(event) {
-      const modal = document.getElementById('detailsModal');
-      if (event.target === modal) {
-        closeModal();
-      }
-    }
-
-    // Add some interactive effects
-    document.addEventListener('DOMContentLoaded', function() {
-      // Animate cards on scroll
-      const observer = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            entry.target.style.opacity = '1';
-            entry.target.style.transform = 'translateY(0)';
-          }
+          setTimeout(() => {
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+          }, 100);
         });
       });
-
-      document.querySelectorAll('.demo-card').forEach(card => {
-        card.style.opacity = '0';
-        card.style.transform = 'translateY(20px)';
-        card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        observer.observe(card);
-      });
-    });
-  </script>
-</body>
+    </script>
+  </body>
 </html>
