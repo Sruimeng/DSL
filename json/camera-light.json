@@ -1,0 +1,41 @@
+{
+  "metadata": { "defaultPrim": "World", "upAxis": "Y" },
+  "renderer": {
+    "api": "WebGL2",
+    "background": { "type": "color", "color": [0.15, 0.15, 0.18] },
+    "shadows": { "enabled": true, "type": "pcfSoft" },
+    "toneMapping": { "enabled": true, "operator": "aces", "exposure": 1.0 }
+  },
+  "prims": [
+    { "name": "/World", "type": "Xform" },
+    {
+      "name": "/World/Camera",
+      "type": "Camera",
+      "parent": "/World",
+      "transform": { "translate": { "x": 0, "y": 1, "z": 5 } },
+      "attributes": { "projection": "perspective", "focalLength": 50, "clippingRange": [0.1, 1000] }
+    },
+    {
+      "name": "/World/Light",
+      "type": "Light",
+      "parent": "/World",
+      "transform": { "rotate": { "x": -45, "y": 45, "z": 0 } },
+      "attributes": { "lightType": "directional", "intensity": 3.0, "color": [1, 1, 1] }
+    },
+    {
+      "name": "/World/Plane",
+      "type": "Mesh",
+      "parent": "/World",
+      "points": [
+        { "x": -2, "y": 0, "z": -2 },
+        { "x": 2, "y": 0, "z": -2 },
+        { "x": 2, "y": 0, "z": 2 },
+        { "x": -2, "y": 0, "z": 2 }
+      ],
+      "faceVertexCounts": [4],
+      "faceVertexIndices": [0, 1, 2, 3],
+      "doubleSided": true
+    }
+  ]
+}
+

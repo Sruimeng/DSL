@@ -1,0 +1,28 @@
+{
+  "metadata": { "defaultPrim": "World", "upAxis": "Y" },
+  "renderer": { "api": "WebGL2", "background": { "type": "color", "color": [0.08, 0.08, 0.09] } },
+  "prims": [
+    { "name": "/World", "type": "Xform" },
+    {
+      "name": "/Materials/Red",
+      "type": "Material",
+      "model": "UsdPreviewSurface",
+      "previewSurface": { "diffuseColor": [1, 0, 0], "metallic": 0.0, "roughness": 0.5 }
+    },
+    {
+      "name": "/World/RedQuad",
+      "type": "Mesh",
+      "parent": "/World",
+      "material": "/Materials/Red",
+      "points": [
+        { "x": -1, "y": 0, "z": -1 },
+        { "x": 1, "y": 0, "z": -1 },
+        { "x": 1, "y": 0, "z": 1 },
+        { "x": -1, "y": 0, "z": 1 }
+      ],
+      "faceVertexCounts": [4],
+      "faceVertexIndices": [0, 1, 2, 3]
+    }
+  ]
+}
+

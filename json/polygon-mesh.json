@@ -1,0 +1,22 @@
+{
+  "metadata": { "defaultPrim": "World", "upAxis": "Y" },
+  "renderer": { "api": "WebGL2", "background": { "type": "color", "color": [0.09, 0.09, 0.11] } },
+  "prims": [
+    { "name": "/World", "type": "Xform" },
+    {
+      "name": "/World/Pentagon",
+      "type": "Mesh",
+      "parent": "/World",
+      "points": [
+        { "x": 0, "y": 1, "z": 0 },
+        { "x": 0.95, "y": 0.31, "z": 0 },
+        { "x": 0.59, "y": -0.81, "z": 0 },
+        { "x": -0.59, "y": -0.81, "z": 0 },
+        { "x": -0.95, "y": 0.31, "z": 0 }
+      ],
+      "faceVertexCounts": [5],
+      "faceVertexIndices": [0, 1, 2, 3, 4]
+    }
+  ]
+}
+

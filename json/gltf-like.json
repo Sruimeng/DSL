@@ -1,0 +1,23 @@
+{
+  "metadata": { "defaultPrim": "Scene", "upAxis": "Y" },
+  "renderer": { "api": "WebGL2", "background": { "type": "color", "color": [0.12, 0.13, 0.14] } },
+  "prims": [
+    { "name": "/Scene", "type": "Xform" },
+    { "name": "/Scene/Node0", "type": "Xform", "parent": "/Scene", "transform": { "translate": { "x": 0, "y": 0, "z": 0 }, "scale": { "x": 1, "y": 1, "z": 1 } } },
+    {
+      "name": "/Scene/Node0/Mesh0",
+      "type": "Mesh",
+      "parent": "/Scene/Node0",
+      "points": [
+        { "x": -0.5, "y": -0.5, "z": 0 },
+        { "x": 0.5, "y": -0.5, "z": 0 },
+        { "x": 0.5, "y": 0.5, "z": 0 },
+        { "x": -0.5, "y": 0.5, "z": 0 }
+      ],
+      "faceVertexCounts": [4],
+      "faceVertexIndices": [0, 1, 2, 3],
+      "primvars": { "st": { "values": [[0, 0], [1, 0], [1, 1], [0, 1]] } }
+    }
+  ]
+}
+

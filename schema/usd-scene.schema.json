@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sruimeng.github.io/DSL/usd-scene.schema.json",
+  "title": "USD Scene DSL (subset)",
+  "description": "A JSON-compatible subset of USD scene description for 3D models (phase 1).",
+  "type": "object",
+  "properties": {
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "defaultPrim": { "type": "string" },
+        "upAxis": { "type": "string", "enum": ["Y", "Z"] },
+        "timeCodesPerSecond": { "type": "number" },
+        "frameRate": { "type": "number" },
+        "startTime": { "type": "number" },
+        "endTime": { "type": "number" },
+        "authoredBy": { "type": "string" },
+        "created": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "layer": {
+      "type": "object",
+      "properties": {
+        "identifier": { "type": "string" },
+        "version": { "type": "string" },
+        "comment": { "type": "string" },
+        "subLayers": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": true
+    },
+    "prims": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Prim" }
+    },
+    "renderer": { "$ref": "#/$defs/Renderer" }
+  },
+  "required": ["prims"],
+  "$defs": {
+    "Vector3": {
+      "type": "object",
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" },
+        "z": { "type": "number" }
+      },
+      "required": ["x", "y", "z"],
+      "additionalProperties": false
+    },
+    "Matrix4": {
+      "type": "array",
+      "items": { "type": "number" },
+      "minItems": 16,
+      "maxItems": 16
+    },
+    "PrimTransform": {
+      "type": "object",
+      "properties": {
+        "translate": { "$ref": "#/$defs/Vector3" },
+        "rotate": { "$ref": "#/$defs/Vector3" },
+        "scale": { "$ref": "#/$defs/Vector3" },
+        "pivot": { "$ref": "#/$defs/Vector3" },
+        "matrix": { "$ref": "#/$defs/Matrix4" }
+      },
+      "additionalProperties": false
+    },
+    "BasePrim": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^(\\/)?[A-Za-z0-9_\\/\.-]+$"
+        },
+        "type": { "type": "string" },
+        "parent": { "type": "string" },
+        "active": { "type": "boolean" },
+        "visibility": { "type": "string", "enum": ["inherited", "invisible"] },
+        "customData": { "type": "object" },
+        "transform": { "$ref": "#/$defs/PrimTransform" }
+      },
+      "required": ["name", "type"],
+      "additionalProperties": true
+    },
+    "XformPrim": {
+      "allOf": [
+        { "$ref": "#/$defs/BasePrim" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "Xform" },
+            "xformOpOrder": { "type": "array", "items": { "type": "string" } },
+            "children": { "type": "array", "items": { "$ref": "#/$defs/Prim" } }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "PrimvarsUV": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "DisplayColor": {
+      "type": "object",
+      "properties": {
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "number" },
+            "minItems": 3,
+            "maxItems": 3
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "MeshPrim": {
+      "allOf": [
+        { "$ref": "#/$defs/BasePrim" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "Mesh" },
+            "points": { "type": "array", "items": { "$ref": "#/$defs/Vector3" }, "minItems": 1 },
+            "faceVertexCounts": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 3 },
+              "minItems": 1
+            },
+            "faceVertexIndices": {
+              "type": "array",
+              "items": { "type": "integer", "minimum": 0 },
+              "minItems": 3
+            },
+            "material": { "type": "string" },
+            "doubleSided": { "type": "boolean" },
+            "primvars": {
+              "type": "object",
+              "properties": {
+                "st": { "$ref": "#/$defs/PrimvarsUV" },
+                "uv": { "$ref": "#/$defs/PrimvarsUV" }
+              },
+              "additionalProperties": true
+            },
+            "displayColor": { "$ref": "#/$defs/DisplayColor" }
+          },
+          "required": ["points", "faceVertexCounts", "faceVertexIndices"],
+          "additionalProperties": true
+        }
+      ]
+    },
+    "CameraPrim": {
+      "allOf": [
+        { "$ref": "#/$defs/BasePrim" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "Camera" },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "projection": { "type": "string", "enum": ["perspective", "orthographic"] },
+                "focalLength": { "type": "number", "minimum": 0 },
+                "clippingRange": {
+                  "type": "array",
+                  "items": { "type": "number", "minimum": 0 },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "LightPrim": {
+      "allOf": [
+        { "$ref": "#/$defs/BasePrim" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "Light" },
+            "attributes": {
+              "type": "object",
+              "properties": {
+                "lightType": {
+                  "type": "string",
+                  "enum": ["directional", "point", "spot", "ambient"]
+                },
+                "intensity": { "type": "number", "minimum": 0 },
+                "color": {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "minItems": 3,
+                  "maxItems": 3
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "MaterialPrim": {
+      "allOf": [
+        { "$ref": "#/$defs/BasePrim" },
+        {
+          "type": "object",
+          "properties": {
+            "type": { "const": "Material" },
+            "model": { "type": "string" },
+            "previewSurface": {
+              "type": "object",
+              "properties": {
+                "diffuseColor": {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "minItems": 3,
+                  "maxItems": 4
+                },
+                "metallic": { "type": "number", "minimum": 0, "maximum": 1 },
+                "roughness": { "type": "number", "minimum": 0, "maximum": 1 }
+              },
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true
+        }
+      ]
+    },
+    "Prim": {
+      "oneOf": [
+        { "$ref": "#/$defs/XformPrim" },
+        { "$ref": "#/$defs/MeshPrim" },
+        { "$ref": "#/$defs/CameraPrim" },
+        { "$ref": "#/$defs/LightPrim" },
+        { "$ref": "#/$defs/MaterialPrim" },
+        { "$ref": "#/$defs/BasePrim" }
+      ]
+    },
+    "Renderer": {
+      "type": "object",
+      "properties": {
+        "api": { "type": "string", "enum": ["WebGL2", "WebGL"] },
+        "background": {
+          "type": "object",
+          "properties": {
+            "type": { "type": "string", "enum": ["color"] },
+            "color": {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 3,
+              "maxItems": 3
+            }
+          },
+          "required": ["type", "color"],
+          "additionalProperties": true
+        },
+        "shadows": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "type": { "type": "string", "enum": ["basic", "pcf", "pcfSoft"] }
+          },
+          "additionalProperties": true
+        },
+        "toneMapping": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean" },
+            "operator": { "type": "string", "enum": ["aces", "linear", "reinhard"] },
+            "exposure": { "type": "number", "minimum": 0 }
+          },
+          "additionalProperties": true
+        }
+      },
+      "additionalProperties": true
+    }
+  }
+}

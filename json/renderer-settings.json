@@ -1,0 +1,21 @@
+{
+  "metadata": { "defaultPrim": "World", "upAxis": "Y" },
+  "renderer": {
+    "api": "WebGL2",
+    "background": { "type": "color", "color": [0.18, 0.18, 0.2] },
+    "shadows": { "enabled": true, "type": "pcfSoft" },
+    "toneMapping": { "enabled": true, "operator": "aces", "exposure": 1.25 }
+  },
+  "prims": [
+    { "name": "/World", "type": "Xform" },
+    {
+      "name": "/World/Quad",
+      "type": "Mesh",
+      "parent": "/World",
+      "points": [ { "x": -0.75, "y": -0.75, "z": 0 }, { "x": 0.75, "y": -0.75, "z": 0 }, { "x": 0.75, "y": 0.75, "z": 0 }, { "x": -0.75, "y": 0.75, "z": 0 } ],
+      "faceVertexCounts": [4],
+      "faceVertexIndices": [0, 1, 2, 3]
+    }
+  ]
+}
+

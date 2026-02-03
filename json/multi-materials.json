@@ -1,0 +1,28 @@
+{
+  "metadata": { "defaultPrim": "World", "upAxis": "Y" },
+  "renderer": { "api": "WebGL2", "background": { "type": "color", "color": [0.07, 0.07, 0.08] } },
+  "prims": [
+    { "name": "/World", "type": "Xform" },
+    { "name": "/Materials/Blue", "type": "Material", "previewSurface": { "diffuseColor": [0, 0.2, 1], "metallic": 0.1, "roughness": 0.4 } },
+    { "name": "/Materials/Green", "type": "Material", "previewSurface": { "diffuseColor": [0, 1, 0.2], "metallic": 0.0, "roughness": 0.7 } },
+    {
+      "name": "/World/BlueQuad",
+      "type": "Mesh",
+      "parent": "/World",
+      "material": "/Materials/Blue",
+      "points": [ { "x": -1, "y": 0, "z": -1 }, { "x": 0, "y": 0, "z": -1 }, { "x": 0, "y": 0, "z": 0 }, { "x": -1, "y": 0, "z": 0 } ],
+      "faceVertexCounts": [4],
+      "faceVertexIndices": [0, 1, 2, 3]
+    },
+    {
+      "name": "/World/GreenQuad",
+      "type": "Mesh",
+      "parent": "/World",
+      "material": "/Materials/Green",
+      "points": [ { "x": 0, "y": 0, "z": -1 }, { "x": 1, "y": 0, "z": -1 }, { "x": 1, "y": 0, "z": 0 }, { "x": 0, "y": 0, "z": 0 } ],
+      "faceVertexCounts": [4],
+      "faceVertexIndices": [0, 1, 2, 3]
+    }
+  ]
+}
+
